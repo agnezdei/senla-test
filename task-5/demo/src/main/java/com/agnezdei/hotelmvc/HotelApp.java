@@ -1,10 +1,11 @@
-package com.agnezdei.hotel;
+package com.agnezdei.hotelmvc;
 
-import com.agnezdei.hotel.model.*;
-import com.agnezdei.hotel.controller.HotelAdmin;
-import com.agnezdei.hotel.controller.HotelReporter;
-import com.agnezdei.hotel.ui.ConsoleUI;
 import java.time.LocalDate;
+
+import com.agnezdei.hotelmvc.controller.HotelAdmin;
+import com.agnezdei.hotelmvc.controller.HotelReporter;
+import com.agnezdei.hotelmvc.model.*;
+import com.agnezdei.hotelmvc.ui.ConsoleUI;
 
 public class HotelApp {
     public static void main(String[] args) {

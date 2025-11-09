@@ -1,13 +1,13 @@
-package com.agnezdei.hotel.model;
+package com.agnezdei.hotelmvc.model;
 
-public enum ServiceCategory {
-    FOOD("Питание"),
-    CLEANING("Обслуживание"),
-    COMFORT("Комфорт");
+public enum RoomType {
+    STANDARD("Стандарт"),
+    BUSINESS("Бизнес"),
+    LUXURY("Люкс");
     
     private final String displayName;
     
-    ServiceCategory(String displayName) {
+    RoomType(String displayName) {
         this.displayName = displayName;
     }
     

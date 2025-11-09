@@ -1,4 +1,4 @@
-package com.agnezdei.hotel.model;
+package com.agnezdei.hotelmvc.model;
 
 import java.time.LocalDate;
 import java.util.ArrayList;

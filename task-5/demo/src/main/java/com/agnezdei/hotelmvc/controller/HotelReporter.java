@@ -1,12 +1,12 @@
-package com.agnezdei.hotel.controller;
-
-import com.agnezdei.hotel.model.*;
+package com.agnezdei.hotelmvc.controller;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+
+import com.agnezdei.hotelmvc.model.*;
 
 import java.util.Comparator;
 import java.util.Collections;

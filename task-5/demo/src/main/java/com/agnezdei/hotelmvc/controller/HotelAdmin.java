@@ -1,8 +1,8 @@
-package com.agnezdei.hotel.controller;
+package com.agnezdei.hotelmvc.controller;
 
 import java.time.LocalDate;
 
-import com.agnezdei.hotel.model.*;
+import com.agnezdei.hotelmvc.model.*;
 
 public class HotelAdmin {
     private Hotel hotel;

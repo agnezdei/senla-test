@@ -1,14 +1,14 @@
-package com.agnezdei.hotel.ui;
-
-import com.agnezdei.hotel.model.*;
-import com.agnezdei.hotel.controller.HotelAdmin;
-import com.agnezdei.hotel.controller.HotelReporter;
+package com.agnezdei.hotelmvc.ui;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Scanner;
+
+import com.agnezdei.hotelmvc.controller.HotelAdmin;
+import com.agnezdei.hotelmvc.controller.HotelReporter;
+import com.agnezdei.hotelmvc.model.*;
 
 public class ConsoleUI {
     private HotelAdmin admin;

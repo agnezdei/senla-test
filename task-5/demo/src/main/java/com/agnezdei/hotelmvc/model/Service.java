@@ -1,4 +1,4 @@
-package com.agnezdei.hotel.model;
+package com.agnezdei.hotelmvc.model;
 
 public class Service {
     private String name;

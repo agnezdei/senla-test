@@ -1,4 +1,4 @@
-package com.agnezdei.hotel.ui;
+package com.agnezdei.hotelmvc.ui;
 
 public enum MenuCommand {
     EXIT(0, "Выход"),
