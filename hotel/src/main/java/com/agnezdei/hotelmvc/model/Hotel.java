@@ -1,9 +1,11 @@
 package com.agnezdei.hotelmvc.model;
 
+import java.io.Serializable;
+
 import java.util.ArrayList;
 import java.util.List;
 
-public class Hotel {
+public class Hotel implements Serializable {
     private String name;
     private List<Room> rooms;
     private List<Service> services;

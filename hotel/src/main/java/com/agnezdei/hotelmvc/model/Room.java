@@ -1,9 +1,11 @@
 package com.agnezdei.hotelmvc.model;
 
+import java.io.Serializable;
+
 import java.util.ArrayList;
 import java.util.List;
 
-public class Room {
+public class Room implements Serializable {
     private Long id;
     private String number;
     private RoomType type;
@@ -29,9 +31,16 @@ public class Room {
 
     public List<Booking> getBookingHistory() { return new ArrayList<>(bookingHistory); }
 
-    public void addToHistory(Booking booking) {
-        this.bookingHistory.add(booking);
+    public void addToHistory(Booking booking, int maxHistoryEntries) {
+    this.bookingHistory.add(booking);
+    
+    if (bookingHistory.size() > maxHistoryEntries) {
+        int excess = bookingHistory.size() - maxHistoryEntries;
+        for (int i = 0; i < excess; i++) {
+            bookingHistory.remove(0);
+        }
     }
+}
     
     public Long getId() { return id; }
     public int getCapacity() { return capacity; }

@@ -1,6 +1,8 @@
 package com.agnezdei.hotelmvc.model;
 
-public class Guest {
+import java.io.Serializable;
+
+public class Guest implements Serializable {
     private Long id;
     private String name;
     private String passportNumber;

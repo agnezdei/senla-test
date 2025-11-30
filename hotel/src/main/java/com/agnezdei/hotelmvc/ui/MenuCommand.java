@@ -39,7 +39,11 @@ public enum MenuCommand {
     IMPORT_ROOMS(31, "Импорт номеров из CSV"),
     IMPORT_SERVICES(32, "Импорт услуг из CSV"),
     IMPORT_GUESTS(33, "Импорт гостей из CSV"),
-    IMPORT_BOOKINGS(34, "Импорт бронирований из CSV");
+    IMPORT_BOOKINGS(34, "Импорт бронирований из CSV"),
+
+    SHOW_CONFIG(35, "Показать настройки"),
+    TOGGLE_ROOM_STATUS_CHANGE(36, "Вкл/Выкл изменение статуса номеров"),
+    SET_MAX_HISTORY_ENTRIES(37, "Установить макс. записей истории");
 
     private final int code;
     private final String description;
@@ -100,6 +104,13 @@ public enum MenuCommand {
         System.out.println("\n--- ИМПОРТ/ЭКСПОРТ ---");
         for (MenuCommand command : values()) {
             if (command.getCode() >= 27 && command.getCode() <= 34) {
+                System.out.println(command.getCode() + ". " + command.getDescription());
+            }
+        }
+
+        System.out.println("\n--- НАСТРОЙКИ ---");
+        for (MenuCommand command : values()) {
+            if (command.getCode() >= 35 && command.getCode() <= 37) {
                 System.out.println(command.getCode() + ". " + command.getDescription());
             }
         }
