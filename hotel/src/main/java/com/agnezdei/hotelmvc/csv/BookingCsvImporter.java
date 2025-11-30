@@ -8,12 +8,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.agnezdei.hotelmvc.model.*;
+import com.agnezdei.hotelmvc.config.*;
 
 public class BookingCsvImporter {
     private Hotel hotel;
+    private AppConfig config;
 
-    public BookingCsvImporter(Hotel hotel) {
+    public BookingCsvImporter(Hotel hotel, AppConfig config) {
         this.hotel = hotel;
+        this.config = config;
     }
 
     public String importBookings(String filePath) {
@@ -67,7 +70,7 @@ public class BookingCsvImporter {
                             room.setCurrentBooking(booking);
                             room.setStatus(RoomStatus.OCCUPIED);
                         } else {
-                            room.addToHistory(booking);
+                            room.addToHistory(booking, config.getMaxBookingHistoryEntries());
                         }
                         imported++;
                     }

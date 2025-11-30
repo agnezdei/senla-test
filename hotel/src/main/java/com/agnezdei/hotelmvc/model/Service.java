@@ -1,6 +1,8 @@
 package com.agnezdei.hotelmvc.model;
 
-public class Service {
+import java.io.Serializable;
+
+public class Service implements Serializable {
     private Long id;
     private String name;
     private double price;
