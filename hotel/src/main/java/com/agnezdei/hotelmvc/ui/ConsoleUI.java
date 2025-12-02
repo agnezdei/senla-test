@@ -9,18 +9,15 @@ import java.util.Scanner;
 import com.agnezdei.hotelmvc.controller.*;
 import com.agnezdei.hotelmvc.model.*;
 import com.agnezdei.hotelmvc.exceptions.*;
-import com.agnezdei.hotelmvc.config.*;
 
 public class ConsoleUI {
     private HotelAdmin admin;
-    private AppConfig config;
     private HotelReporter reporter;
     private Scanner scanner;
     private DateTimeFormatter dateFormatter;
     
-    public ConsoleUI(HotelAdmin admin, AppConfig config, HotelReporter reporter) {
+    public ConsoleUI(HotelAdmin admin, HotelReporter reporter) {
         this.admin = admin;
-        this.config = config;
         this.reporter = reporter;
         this.scanner = new Scanner(System.in);
         this.dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -171,15 +168,6 @@ public class ConsoleUI {
                         break;
                     case IMPORT_BOOKINGS:
                         importBookings();
-                        break;
-                    case SHOW_CONFIG:
-                        showConfig();
-                        break;
-                    case TOGGLE_ROOM_STATUS_CHANGE:
-                        toggleRoomStatusChange();
-                        break;
-                    case SET_MAX_HISTORY_ENTRIES:
-                        setMaxHistoryEntries();
                         break;
                 }
             } catch (Exception e) {
@@ -517,40 +505,6 @@ public class ConsoleUI {
         String filePath = scanner.nextLine();
         String result = admin.importBookingsFromCsv(filePath);
         System.out.println(result);
-    }
-
-    private void showConfig() {
-        System.out.println("\n=== НАСТРОЙКИ СИСТЕМЫ ===");
-        System.out.println("Изменение статуса номеров: " + 
-            (config.isAllowRoomStatusChange() ? "РАЗРЕШЕНО" : "ЗАПРЕЩЕНО"));
-        System.out.println("Макс. записей истории номера: " + 
-            config.getMaxBookingHistoryEntries());
-    }
-    
-    private void toggleRoomStatusChange() {
-        boolean current = config.isAllowRoomStatusChange();
-        config.setAllowRoomStatusChange(!current);
-        System.out.println("Изменение статуса номеров: " + 
-            (config.isAllowRoomStatusChange() ? "РАЗРЕШЕНО" : "ЗАПРЕЩЕНО"));
-    }
-    
-    private void setMaxHistoryEntries() {
-        System.out.print("Введите максимальное количество записей истории: ");
-        try {
-            int maxEntries = scanner.nextInt();
-            scanner.nextLine();
-            
-            if (maxEntries < 1) {
-                System.out.println("Значение должно быть положительным числом");
-                return;
-            }
-            
-            config.setMaxBookingHistoryEntries(maxEntries);
-            System.out.println("Максимальное количество записей истории установлено: " + maxEntries);
-        } catch (Exception e) {
-            System.out.println("Ошибка: введите корректное число");
-            scanner.nextLine();
-        }
     }
 
     private LocalDate parseDate(String prompt) {

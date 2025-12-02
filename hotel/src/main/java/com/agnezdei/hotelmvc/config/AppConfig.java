@@ -23,7 +23,6 @@ public class AppConfig {
             properties.load(input);
         } catch (IOException e) {
             setDefaultValues();
-            saveConfig();
         }
     }
     
@@ -32,22 +31,9 @@ public class AppConfig {
         properties.setProperty(MAX_BOOKING_HISTORY_ENTRIES, String.valueOf(DEFAULT_MAX_HISTORY_ENTRIES));
     }
     
-    public void saveConfig() {
-        try (OutputStream output = new FileOutputStream(CONFIG_FILE)) {
-            properties.store(output, "Hotel Management System Configuration");
-        } catch (IOException e) {
-            System.err.println("Ошибка сохранения конфигурации: " + e.getMessage());
-        }
-    }
-    
     public boolean isAllowRoomStatusChange() {
         return Boolean.parseBoolean(properties.getProperty(ALLOW_ROOM_STATUS_CHANGE, 
                                 String.valueOf(DEFAULT_ALLOW_STATUS_CHANGE)));
-    }
-    
-    public void setAllowRoomStatusChange(boolean allow) {
-        properties.setProperty(ALLOW_ROOM_STATUS_CHANGE, String.valueOf(allow));
-        saveConfig();
     }
     
     public int getMaxBookingHistoryEntries() {
@@ -57,14 +43,5 @@ public class AppConfig {
         } catch (NumberFormatException e) {
             return DEFAULT_MAX_HISTORY_ENTRIES;
         }
-    }
-    
-    public void setMaxBookingHistoryEntries(int maxEntries) {
-        properties.setProperty(MAX_BOOKING_HISTORY_ENTRIES, String.valueOf(maxEntries));
-        saveConfig();
-    }
-    
-    public Properties getAllProperties() {
-        return new Properties(properties);
     }
 }
