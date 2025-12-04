@@ -6,22 +6,25 @@ import java.time.LocalDate;
 import com.agnezdei.hotelmvc.model.*;
 import com.agnezdei.hotelmvc.exceptions.*;
 import com.agnezdei.hotelmvc.csv.*;
+import com.agnezdei.hotelmvc.config.*;
 
 public class HotelAdmin {
     private Hotel hotel;
+    private AppConfig config;
     private CsvExporter csvExporter;
     private RoomCsvImporter roomImporter;
     private GuestCsvImporter guestImporter;
     private ServiceCsvImporter serviceImporter;
     private BookingCsvImporter bookingImporter;
     
-    public HotelAdmin(Hotel hotel) {
+    public HotelAdmin(Hotel hotel, AppConfig config) {
         this.hotel = hotel;
+        this.config = config;
         this.csvExporter = new CsvExporter();
         this.roomImporter = new RoomCsvImporter(hotel);
         this.guestImporter = new GuestCsvImporter(hotel);
         this.serviceImporter = new ServiceCsvImporter(hotel);
-        this.bookingImporter = new BookingCsvImporter(hotel);
+        this.bookingImporter = new BookingCsvImporter(hotel, config);
     }
     
     public String exportRoomsToCsv(String filePath) {
@@ -131,7 +134,7 @@ public class HotelAdmin {
 
         Booking currentBooking = room.getCurrentBooking();
         if (currentBooking != null) {
-            room.addToHistory(currentBooking);
+            room.addToHistory(currentBooking, config.getMaxBookingHistoryEntries());
             String guestName = currentBooking.getGuest().getName();
             room.setCurrentBooking(null);
             room.setStatus(RoomStatus.AVAILABLE);
@@ -145,6 +148,10 @@ public class HotelAdmin {
         if (room == null) {
             throw new EntityNotFoundException("Номер " + roomNumber + " не найден");
         }
+
+        if (!config.isAllowRoomStatusChange()) {
+            throw new BusinessLogicException("Изменение статуса номеров запрещено в настройках");
+        }
         
         if (room.getStatus() == RoomStatus.OCCUPIED) {
             throw new BusinessLogicException("Нельзя перевести занятый номер на ремонт");
@@ -154,10 +161,14 @@ public class HotelAdmin {
         return "Успех: Номер " + roomNumber + " переведен на ремонт";
     }
     
-    public String setRoomAvailable(String roomNumber) throws EntityNotFoundException {
+    public String setRoomAvailable(String roomNumber) throws EntityNotFoundException, BusinessLogicException {
         Room room = hotel.findRoom(roomNumber);
         if (room == null) {
             throw new EntityNotFoundException("Номер " + roomNumber + " не найден");
+        }
+
+        if (!config.isAllowRoomStatusChange()) {
+            throw new BusinessLogicException("Изменение статуса номеров запрещено в настройках");
         }
         
         room.setStatus(RoomStatus.AVAILABLE);

@@ -241,6 +241,8 @@ public class ConsoleUI {
             System.out.println(result);
         } catch (EntityNotFoundException e) {
             System.out.println("Ошибка: " + e.getMessage());
+        } catch (BusinessLogicException e) {
+            System.out.println("Невозможно выполнить операцию: " + e.getMessage());
         }
     }
     

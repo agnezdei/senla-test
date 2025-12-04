@@ -3,8 +3,9 @@ package com.agnezdei.hotelmvc.model;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.io.Serializable;
 
-public class Booking {
+public class Booking implements Serializable {
     private Long id;
     private Guest guest;
     private Room room;
@@ -34,7 +35,7 @@ public class Booking {
     public void setCheckOutDate(LocalDate checkOutDate) { this.checkOutDate = checkOutDate; }
     public void setActive(boolean active) { isActive = active; }
     
-    public static class ServiceWithDate {
+    public static class ServiceWithDate implements Serializable{
         private Service service;
         private LocalDate date;
         
