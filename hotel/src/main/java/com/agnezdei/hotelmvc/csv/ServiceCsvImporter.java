@@ -7,12 +7,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.agnezdei.hotelmvc.model.*;
+import com.agnezdei.hotelmvc.annotations.Inject;
 
 public class ServiceCsvImporter {
+    @Inject
     private Hotel hotel;
 
-    public ServiceCsvImporter(Hotel hotel) {
-        this.hotel = hotel;
+    public ServiceCsvImporter() {
     }
 
     public String importServices(String filePath) {

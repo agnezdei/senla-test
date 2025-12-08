@@ -1,47 +1,35 @@
 package com.agnezdei.hotelmvc.config;
 
-import java.io.*;
-import java.util.Properties;
+import com.agnezdei.hotelmvc.annotations.ConfigProperty;
 
 public class AppConfig {
-    private static final String CONFIG_FILE = "hotel_config.properties";
-    private Properties properties;
+    @ConfigProperty(
+        configFileName = "hotel_config.properties",
+        propertyName = "allow.room.status.change",
+        type = Boolean.class
+    )
+    private boolean allowRoomStatusChange = true;
     
-    private static final String ALLOW_ROOM_STATUS_CHANGE = "allow.room.status.change";
-    private static final String MAX_BOOKING_HISTORY_ENTRIES = "max.booking.history.entries";
-    
-    private static final boolean DEFAULT_ALLOW_STATUS_CHANGE = true;
-    private static final int DEFAULT_MAX_HISTORY_ENTRIES = 10;
-    
-    public AppConfig() {
-        properties = new Properties();
-        loadConfig();
-    }
-    
-    private void loadConfig() {
-        try (InputStream input = new FileInputStream(CONFIG_FILE)) {
-            properties.load(input);
-        } catch (IOException e) {
-            setDefaultValues();
-        }
-    }
-    
-    private void setDefaultValues() {
-        properties.setProperty(ALLOW_ROOM_STATUS_CHANGE, String.valueOf(DEFAULT_ALLOW_STATUS_CHANGE));
-        properties.setProperty(MAX_BOOKING_HISTORY_ENTRIES, String.valueOf(DEFAULT_MAX_HISTORY_ENTRIES));
-    }
-    
+    @ConfigProperty(
+        configFileName = "hotel_config.properties",
+        propertyName = "max.booking.history.entries", 
+        type = Integer.class
+    )
+    private int maxBookingHistoryEntries = 10;
+
     public boolean isAllowRoomStatusChange() {
-        return Boolean.parseBoolean(properties.getProperty(ALLOW_ROOM_STATUS_CHANGE, 
-                                String.valueOf(DEFAULT_ALLOW_STATUS_CHANGE)));
+        return allowRoomStatusChange;
     }
     
     public int getMaxBookingHistoryEntries() {
-        try {
-            return Integer.parseInt(properties.getProperty(MAX_BOOKING_HISTORY_ENTRIES, 
-                                    String.valueOf(DEFAULT_MAX_HISTORY_ENTRIES)));
-        } catch (NumberFormatException e) {
-            return DEFAULT_MAX_HISTORY_ENTRIES;
-        }
+        return maxBookingHistoryEntries;
+    }
+
+    @Override
+    public String toString() {
+        return "AppConfig{" +
+               "allowRoomStatusChange=" + allowRoomStatusChange +
+               ", maxBookingHistoryEntries=" + maxBookingHistoryEntries +
+               '}';
     }
 }

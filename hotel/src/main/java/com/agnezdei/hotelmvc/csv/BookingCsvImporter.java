@@ -9,14 +9,14 @@ import java.util.List;
 
 import com.agnezdei.hotelmvc.model.*;
 import com.agnezdei.hotelmvc.config.*;
+import com.agnezdei.hotelmvc.annotations.Inject;
 
 public class BookingCsvImporter {
+    @Inject
     private Hotel hotel;
     private AppConfig config;
 
-    public BookingCsvImporter(Hotel hotel, AppConfig config) {
-        this.hotel = hotel;
-        this.config = config;
+    public BookingCsvImporter() {
     }
 
     public String importBookings(String filePath) {

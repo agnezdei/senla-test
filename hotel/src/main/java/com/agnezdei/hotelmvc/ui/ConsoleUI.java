@@ -9,16 +9,17 @@ import java.util.Scanner;
 import com.agnezdei.hotelmvc.controller.*;
 import com.agnezdei.hotelmvc.model.*;
 import com.agnezdei.hotelmvc.exceptions.*;
+import com.agnezdei.hotelmvc.annotations.*;
 
 public class ConsoleUI {
+    @Inject
     private HotelAdmin admin;
+    @Inject
     private HotelReporter reporter;
     private Scanner scanner;
     private DateTimeFormatter dateFormatter;
     
-    public ConsoleUI(HotelAdmin admin, HotelReporter reporter) {
-        this.admin = admin;
-        this.reporter = reporter;
+    public ConsoleUI() {
         this.scanner = new Scanner(System.in);
         this.dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     }

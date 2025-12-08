@@ -7,11 +7,13 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import com.agnezdei.hotelmvc.model.*;
+import com.agnezdei.hotelmvc.annotations.*;
 
 import java.util.Comparator;
 import java.util.Collections;
 
 public class HotelReporter {
+    @Inject
     private Hotel hotel;
 
     private static class PricedItem {
@@ -26,8 +28,7 @@ public class HotelReporter {
         }
     }
 
-    public HotelReporter(Hotel hotel) {
-        this.hotel = hotel;
+    public HotelReporter() {
     }
 
     public List<Room> getRoomsSortedByPrice() {
