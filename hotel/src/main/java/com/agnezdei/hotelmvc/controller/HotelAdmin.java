@@ -7,24 +7,31 @@ import com.agnezdei.hotelmvc.model.*;
 import com.agnezdei.hotelmvc.exceptions.*;
 import com.agnezdei.hotelmvc.csv.*;
 import com.agnezdei.hotelmvc.config.*;
+import com.agnezdei.hotelmvc.annotations.*;
 
 public class HotelAdmin {
+    @Inject
     private Hotel hotel;
-    private AppConfig config;
-    private CsvExporter csvExporter;
-    private RoomCsvImporter roomImporter;
-    private GuestCsvImporter guestImporter;
-    private ServiceCsvImporter serviceImporter;
-    private BookingCsvImporter bookingImporter;
     
-    public HotelAdmin(Hotel hotel, AppConfig config) {
-        this.hotel = hotel;
-        this.config = config;
-        this.csvExporter = new CsvExporter();
-        this.roomImporter = new RoomCsvImporter(hotel);
-        this.guestImporter = new GuestCsvImporter(hotel);
-        this.serviceImporter = new ServiceCsvImporter(hotel);
-        this.bookingImporter = new BookingCsvImporter(hotel, config);
+    @Inject
+    private AppConfig config;
+    
+    @Inject
+    private CsvExporter csvExporter;
+    
+    @Inject
+    private RoomCsvImporter roomImporter;
+    
+    @Inject
+    private GuestCsvImporter guestImporter;
+    
+    @Inject
+    private ServiceCsvImporter serviceImporter;
+    
+    @Inject
+    private BookingCsvImporter bookingImporter;
+
+    public HotelAdmin() {
     }
     
     public String exportRoomsToCsv(String filePath) {

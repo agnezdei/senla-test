@@ -4,77 +4,97 @@ import com.agnezdei.hotelmvc.controller.*;
 import com.agnezdei.hotelmvc.model.*;
 import com.agnezdei.hotelmvc.ui.*;
 import com.agnezdei.hotelmvc.config.*;
+import com.agnezdei.hotelmvc.di.*;
+import com.agnezdei.hotelmvc.csv.*;
 
 public class HotelApp {
     public static void main(String[] args) {
         System.out.println("=== СИСТЕМА УПРАВЛЕНИЯ ГОСТИНИЦЕЙ ===\n");
         
-        AppConfig config = new AppConfig();
-
-        final Hotel hotel;
-        Hotel loadedHotel = StateManager.loadState();
-        if (loadedHotel == null) {
-            hotel = new Hotel("Гранд Отель");
-            initializeTestData(hotel, config);
-        } else {
-            hotel = loadedHotel;
-        }
-        
-        HotelAdmin admin = new HotelAdmin(hotel, config);
-        HotelReporter reporter = new HotelReporter(hotel);
-
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            System.out.println("\nСохранение состояния программы...");
-            StateManager.saveState(hotel);
-        }));
-        
-        ConsoleUI ui = new ConsoleUI(admin, reporter);
-        
         try {
+            System.out.println("Загрузка конфигурации...");
+            AppConfig config = new AppConfig();
+            ConfigProcessor.process(config);
+            System.out.println("Конфигурация загружена:");
+            System.out.println("  - Разрешено менять статус комнат: " + config.isAllowRoomStatusChange());
+            System.out.println("  - Макс. записей истории: " + config.getMaxBookingHistoryEntries());
+            System.out.println();
+            
+            final Hotel hotel;
+            Hotel loadedHotel = StateManager.loadState();
+            if (loadedHotel == null) {
+                hotel = new Hotel("Гранд Отель");
+                System.out.println("Создан новый отель: " + hotel.getName());
+            } else {
+                hotel = loadedHotel;
+                System.out.println("Отель загружен из сохранения: " + hotel.getName());
+            }
+
+            System.out.println("\nИнициализация DI контейнера...");
+            DependencyContainer container = new DependencyContainer();
+            
+            container.register(Hotel.class, hotel);
+            container.register(AppConfig.class, config);
+            
+
+            CsvExporter csvExporter = new CsvExporter();
+            container.register(CsvExporter.class, csvExporter);
+
+            RoomCsvImporter roomImporter = container.create(RoomCsvImporter.class);
+            GuestCsvImporter guestImporter = container.create(GuestCsvImporter.class);
+            ServiceCsvImporter serviceImporter = container.create(ServiceCsvImporter.class);
+            BookingCsvImporter bookingImporter = container.create(BookingCsvImporter.class);
+            
+            container.register(RoomCsvImporter.class, roomImporter);
+            container.register(GuestCsvImporter.class, guestImporter);
+            container.register(ServiceCsvImporter.class, serviceImporter);
+            container.register(BookingCsvImporter.class, bookingImporter);
+            
+            System.out.println("DI контейнер инициализирован");
+            
+            System.out.println("Создание контроллеров...");
+            HotelAdmin admin = container.create(HotelAdmin.class);
+            HotelReporter reporter = container.create(HotelReporter.class);
+
+            container.register(HotelAdmin.class, admin);
+            container.register(HotelReporter.class, reporter);
+
+            ConsoleUI ui = container.create(ConsoleUI.class);
+
+            if (loadedHotel == null) {
+                System.out.println("\nИнициализация данных из CSV...");
+                initializeFromCsv(admin);
+            }
+
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                System.out.println("\nСохранение состояния программы...");
+                StateManager.saveState(hotel);
+            }));
+
+            System.out.println("\n" + "=".repeat(50));
+            System.out.println("Приложение готово к работе!");
+            System.out.println("=".repeat(50) + "\n");
+            
             ui.start();
-        } finally {
-            StateManager.saveState(hotel);
+            
+        } catch (Exception e) {
+            System.err.println("\n!!! КРИТИЧЕСКАЯ ОШИБКА !!!");
+            System.err.println("Причина: " + e.getMessage());
+            e.printStackTrace();
+            System.err.println("\nПрограмма завершена с ошибкой.");
         }
     }
-        
-    private static void initializeTestData(Hotel hotel, AppConfig config) {
+    
+    private static void initializeFromCsv(HotelAdmin admin) {
         try {
-            HotelAdmin tempAdmin = new HotelAdmin(hotel, config);
-
-            tempAdmin.addRoom("101", RoomType.STANDARD, 2500.0, 2, 3);
-            tempAdmin.addRoom("102", RoomType.LUXURY, 5000.0, 3, 5);
-            tempAdmin.addRoom("103", RoomType.STANDARD, 2000.0, 2, 3);
+            System.out.println(admin.importRoomsFromCsv("data/rooms.csv"));
+            System.out.println(admin.importServicesFromCsv("data/services.csv"));
+            System.out.println(admin.importGuestsFromCsv("data/guests.csv"));
+            System.out.println(admin.importBookingsFromCsv("data/bookings.csv"));
             
-            tempAdmin.addService("Завтрак", 500.0, ServiceCategory.FOOD);
-            tempAdmin.addService("Ужин", 800.0, ServiceCategory.FOOD);
-            tempAdmin.addService("Уборка", 300.0, ServiceCategory.CLEANING);
-        
-            Guest guest1 = new Guest(hotel.getNextGuestId(), "Иван Иванов", "444444");
-            Guest guest2 = new Guest(hotel.getNextGuestId(), "Петр Петров", "888888");
-            hotel.addGuest(guest1);
-            hotel.addGuest(guest2);
-            
-            // System.out.println("Тестируем экспорт...");
-            // System.out.println(tempAdmin.exportRoomsToCsv("data/rooms.csv"));
-            // System.out.println(tempAdmin.exportServicesToCsv("data/services.csv"));
-            // System.out.println(tempAdmin.exportGuestsToCsv("data/guests.csv"));
-            // System.out.println(tempAdmin.exportBookingsToCsv("data/bookings.csv"));
-            
-            System.out.println("\nТестируем импорт...");
-            System.out.println(tempAdmin.importRoomsFromCsv("data/rooms.csv"));
-            System.out.println(tempAdmin.importServicesFromCsv("data/services.csv"));
-            System.out.println(tempAdmin.importGuestsFromCsv("data/guests.csv"));
-            System.out.println(tempAdmin.importBookingsFromCsv("data/bookings.csv"));
-        
-            System.out.println("\n=== РЕЗУЛЬТАТЫ ===");
-            System.out.println("Комнат: " + hotel.getRooms().size());
-            System.out.println("Услуг: " + hotel.getServices().size());
-            System.out.println("Гостей: " + hotel.getGuests().size());
-            System.out.println("Бронирований: " + hotel.getBookings().size());
-            
-            } catch (Exception e) {
-            System.out.println("Ошибка при инициализации тестовых данных: " + e.getMessage());
-            e.printStackTrace();
+        } catch (Exception e) {
+            System.out.println("Ошибка при загрузке данных из CSV: " + e.getMessage());
+            System.out.println("Продолжение работы с пустыми данными...");
         }
     }
 }
