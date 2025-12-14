@@ -14,6 +14,7 @@ import com.agnezdei.hotelmvc.annotations.Inject;
 public class BookingCsvImporter {
     @Inject
     private Hotel hotel;
+    @Inject
     private AppConfig config;
 
     public BookingCsvImporter() {
