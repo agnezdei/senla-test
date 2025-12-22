@@ -3,6 +3,10 @@ public class ThreadStates {
         Object lock = new Object();
         
         Thread thread = new Thread(() -> {
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {}
+            
             synchronized(lock) {
                 try {
                     lock.wait();
@@ -18,16 +22,15 @@ public class ThreadStates {
             }
         });
         
-        // Захватываем монитор класса для состояния BLOCKED
         synchronized(ThreadStates.class) {
             System.out.println("NEW: " + thread.getState());
             
             thread.start();
-            Thread.sleep(50);
+            System.out.println("RUNNABLE: " + thread.getState());
             
-            System.out.println("RUNNABLE (кратко): " + thread.getState());
+            Thread.sleep(1100);
+            System.out.println("WAITING: " + thread.getState());
             
-            // Будим поток
             synchronized(lock) {
                 lock.notify();
             }
