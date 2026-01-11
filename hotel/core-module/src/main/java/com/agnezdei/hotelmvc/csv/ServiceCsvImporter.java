@@ -5,13 +5,16 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
-import com.agnezdei.hotelmvc.model.*;
 import com.agnezdei.hotelmvc.annotations.Inject;
+import com.agnezdei.hotelmvc.dao.implementations.ServiceDAO;
+import com.agnezdei.hotelmvc.model.Service;
+import com.agnezdei.hotelmvc.model.ServiceCategory;
 
 public class ServiceCsvImporter {
     @Inject
-    private Hotel hotel;
+    private ServiceDAO serviceDAO;
 
     public ServiceCsvImporter() {
     }
@@ -27,24 +30,30 @@ public class ServiceCsvImporter {
             while ((line = reader.readLine()) != null) {
                 try {
                     String[] data = line.split(",");
-                    if (data.length < 4) {
+                    if (data.length < 3) {
                         errors.add("Недостаточно данных в строке: " + line);
                         continue;
                     }
 
-                    Long id = Long.parseLong(data[0]);
-                    String name = data[1];
-                    double price = Double.parseDouble(data[2]);
-                    ServiceCategory category = parseServiceCategory(data[3]);
+                    String name = data[0];
+                    double price = Double.parseDouble(data[1]);
+                    ServiceCategory category = parseServiceCategory(data[2]);
 
-                    Service existingService = hotel.findServiceById(id);
+                    Optional<Service>  existingService = serviceDAO.findByName(name);
                     
-                    if (existingService != null) {
-                        existingService.setPrice(price);
+                    if (existingService.isPresent()) {
+                        Service service = existingService.get();
+                        service.setPrice(price);
+
+                        serviceDAO.update(service);
                         updated++;
                     } else {
-                        Service service = new Service(id, name, price, category, hotel);
-                        hotel.addService(service);
+                        Service service = new Service();
+                        service.setName(name);
+                        service.setPrice(price);
+                        service.setCategory(category);
+
+                        serviceDAO.save(service);
                         imported++;
                     }
                     
@@ -60,18 +69,27 @@ public class ServiceCsvImporter {
         return String.format("Импорт услуг завершен: %d добавлено, %d обновлено. Ошибок: %d", 
                             imported, updated, errors.size());
     }
-
-    private ServiceCategory parseServiceCategory(String categoryStr) {
-        switch (categoryStr.toLowerCase()) {
-            case "питание": return ServiceCategory.FOOD;
-            case "обслуживание": return ServiceCategory.CLEANING;
-            case "комфорт": return ServiceCategory.COMFORT;
-            default: 
-                try {
-                    return ServiceCategory.valueOf(categoryStr.toUpperCase());
-                } catch (IllegalArgumentException e) {
-                    throw new IllegalArgumentException("Неизвестная категория услуги: " + categoryStr);
-                }
-        }
+    
+private ServiceCategory parseServiceCategory(String categoryStr) {
+    if (categoryStr == null) return ServiceCategory.COMFORT;
+    
+    switch (categoryStr.toLowerCase().trim()) {
+        case "питание":
+        case "food":
+            return ServiceCategory.FOOD;
+        case "обслуживание":
+        case "cleaning":
+            return ServiceCategory.CLEANING;
+        case "комфорт":
+        case "comfort":
+            return ServiceCategory.COMFORT;
+        default:
+            try {
+                return ServiceCategory.valueOf(categoryStr.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                System.err.println("Неизвестная категория услуги: " + categoryStr + ", используем COMFORT");
+                return ServiceCategory.COMFORT;
+            }
     }
+}
 }

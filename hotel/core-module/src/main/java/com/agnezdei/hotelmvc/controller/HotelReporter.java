@@ -1,21 +1,26 @@
 package com.agnezdei.hotelmvc.controller;
 
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
-
+import com.agnezdei.hotelmvc.annotations.Inject;
+import com.agnezdei.hotelmvc.dao.implementations.*;
 import com.agnezdei.hotelmvc.model.*;
-import com.agnezdei.hotelmvc.annotations.*;
 
-import java.util.Comparator;
-import java.util.Collections;
+import java.time.LocalDate;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class HotelReporter {
     @Inject
-    private Hotel hotel;
-
+    private RoomDAO roomDAO;
+    
+    @Inject
+    private GuestDAO guestDAO;
+    
+    @Inject
+    private ServiceDAO serviceDAO;
+    
+    @Inject
+    private BookingDAO bookingDAO;
+    
     private static class PricedItem {
         String name;
         String category;
@@ -32,32 +37,45 @@ public class HotelReporter {
     }
 
     public List<Room> getRoomsSortedByPrice() {
-        return hotel.getRooms().stream()
-            .sorted(Comparator.comparing(Room::getPrice))
-            .collect(Collectors.toList());
+        try {
+            return roomDAO.findAll().stream()
+                .sorted(Comparator.comparing(Room::getPrice))
+                .collect(Collectors.toList());
+        } catch (Exception e) {
+            System.err.println("Ошибка при получении комнат: " + e.getMessage());
+            return new ArrayList<>();
+        }
     }
 
     public List<Room> getRoomsSortedByCapacity() {
-        return hotel.getRooms().stream()
-            .sorted(Comparator.comparing(Room::getCapacity))
-            .collect(Collectors.toList());
+        try {
+            return roomDAO.findAll().stream()
+                .sorted(Comparator.comparing(Room::getCapacity))
+                .collect(Collectors.toList());
+        } catch (Exception e) {
+            System.err.println("Ошибка при получении комнат: " + e.getMessage());
+            return new ArrayList<>();
+        }
     }
 
     public List<Room> getRoomsSortedByStars() {
-        return hotel.getRooms().stream()
-            .sorted(Comparator.comparing(Room::getStars))
-            .collect(Collectors.toList());
+        try {
+            return roomDAO.findAll().stream()
+                .sorted(Comparator.comparing(Room::getStars))
+                .collect(Collectors.toList());
+        } catch (Exception e) {
+            System.err.println("Ошибка при получении комнат: " + e.getMessage());
+            return new ArrayList<>();
+        }
     }
     
     public List<Room> getAvailableRooms() {
-        List<Room> availableRooms = new ArrayList<>();
-        
-        for (Room room : hotel.getRooms()) {
-            if (room.getStatus() == RoomStatus.AVAILABLE) {
-                availableRooms.add(room);
-            }
+        try {
+            return roomDAO.findAvailableRooms();
+        } catch (Exception e) {
+            System.err.println("Ошибка при получении доступных комнат: " + e.getMessage());
+            return new ArrayList<>();
         }
-        return availableRooms;
     }
 
     public List<Room> getAvailableRoomsSortedByPrice() {
@@ -79,79 +97,127 @@ public class HotelReporter {
     }
 
     public int getTotalAvailableRooms() {
-        return (int) hotel.getRooms().stream()
-            .filter(room -> room.getStatus() == RoomStatus.AVAILABLE)
-            .count();
-    }
-
-    private List<Booking> getAllActiveBookings() {
-        List<Booking> activeBookings = hotel.getBookings().stream()
-        .filter(Booking::isActive)
-        .collect(Collectors.toList());
-    
-        hotel.getRooms().stream()
-            .map(Room::getCurrentBooking)
-            .filter(Objects::nonNull)
-            .forEach(booking -> {
-                if (!activeBookings.contains(booking)) {
-                    activeBookings.add(booking);
-                }
-            });
-        
-        return activeBookings;
+        return getAvailableRooms().size();
     }
 
     public List<Booking> getGuestsAndRoomsSortedByName() {
-        return getAllActiveBookings().stream()
-            .sorted(Comparator.comparing(booking -> booking.getGuest().getName()))
-            .collect(Collectors.toList());
+        try {
+            return bookingDAO.findActiveBookings().stream()
+                .sorted(Comparator.comparing(b -> b.getGuest().getName()))
+                .collect(Collectors.toList());
+        } catch (Exception e) {
+            System.err.println("Ошибка при получении бронирований: " + e.getMessage());
+            return new ArrayList<>();
+        }
     }
 
     public List<Booking> getGuestsAndRoomsSortedByCheckoutDate() {
-        return getAllActiveBookings().stream()
-            .sorted(Comparator.comparing(Booking::getCheckOutDate))
-            .collect(Collectors.toList());
+        try {
+            return bookingDAO.findActiveBookings().stream()
+                .sorted(Comparator.comparing(Booking::getCheckOutDate))
+                .collect(Collectors.toList());
+        } catch (Exception e) {
+            System.err.println("Ошибка при получении бронирований: " + e.getMessage());
+            return new ArrayList<>();
+        }
     }
 
     public List<Room> getRoomsAvailableByDate(LocalDate date) {
-        return hotel.getRooms().stream()
-            .filter(room -> room.getStatus() == RoomStatus.AVAILABLE || 
-                           (room.getCurrentBooking() != null && 
-                            room.getCurrentBooking().getCheckOutDate().isBefore(date)))
-            .collect(Collectors.toList());
+        try {
+            List<Room> allRooms = roomDAO.findAll();
+            List<Room> availableRooms = new ArrayList<>();
+            
+            for (Room room : allRooms) {
+                if (isRoomAvailableOnDate(room, date)) {
+                    availableRooms.add(room);
+                }
+            }
+            
+            return availableRooms;
+        } catch (Exception e) {
+            System.err.println("Ошибка при получении комнат на дату: " + e.getMessage());
+            return new ArrayList<>();
+        }
+    }
+    
+    private boolean isRoomAvailableOnDate(Room room, LocalDate date) {
+        if (room.getStatus() != RoomStatus.AVAILABLE) {
+            return false;
+        }
+        
+        try {
+            List<Booking> bookings = bookingDAO.findBookingsByRoom(room.getId());
+            for (Booking booking : bookings) {
+                if (booking.isActive() && 
+                    !date.isBefore(booking.getCheckInDate()) && 
+                    !date.isAfter(booking.getCheckOutDate())) {
+                    return false;
+                }
+            }
+        } catch (Exception e) {
+            return false;
+        }
+        
+        return true;
     }
 
     public int getTotalGuests() {
-        return (int) hotel.getRooms().stream()
-            .map(Room::getCurrentBooking)
-            .filter(Objects::nonNull)
-            .count();
+        try {
+            return bookingDAO.findActiveBookings().size();
+        } catch (Exception e) {
+            System.err.println("Ошибка при получении количества гостей: " + e.getMessage());
+            return 0;
+        }
     }
 
     public double getPaymentAmountForRoom(String roomNumber) {
-        Room room = hotel.findRoom(roomNumber);
-        if (room != null && room.getCurrentBooking() != null) {
-            return room.getCurrentBooking().calculateTotalPrice();
+        try {
+            Optional<Room> roomOpt = roomDAO.findByNumber(roomNumber);
+            if (roomOpt.isEmpty()) {
+                return 0.0;
+            }
+            
+            Room room = roomOpt.get();
+            
+            List<Booking> bookings = bookingDAO.findBookingsByRoom(room.getId());
+            for (Booking booking : bookings) {
+                if (booking.isActive()) {
+                    return booking.calculateTotalPrice();
+                }
+            }
+            
+            return 0.0;
+        } catch (Exception e) {
+            System.err.println("Ошибка при расчете оплаты за номер: " + e.getMessage());
+            return 0.0;
         }
-        return 0.0;
     }
 
     public List<Booking.ServiceWithDate> getGuestServicesSortedByPrice(String guestName) {
         List<Booking.ServiceWithDate> allServices = new ArrayList<>();
         
-        for (Room room : hotel.getRooms()) {
-            Booking booking = room.getCurrentBooking();
-            if (booking != null && booking.getGuest().getName().equals(guestName)) {
-                allServices.addAll(booking.getServices());
+        try {
+            List<Guest> guests = guestDAO.findAll().stream()
+                .filter(g -> g.getName().equals(guestName))
+                .collect(Collectors.toList());
+            
+            for (Guest guest : guests) {
+                List<Booking> bookings = bookingDAO.findBookingsByGuest(guest.getId());
+                for (Booking booking : bookings) {
+                    allServices.addAll(booking.getServices());
+                }
             }
+            
+            Collections.sort(allServices, new Comparator<Booking.ServiceWithDate>() {
+                @Override
+                public int compare(Booking.ServiceWithDate swd1, Booking.ServiceWithDate swd2) {
+                    return Double.compare(swd1.getService().getPrice(), swd2.getService().getPrice());
+                }
+            });
+            
+        } catch (Exception e) {
+            System.err.println("Ошибка при получении услуг гостя: " + e.getMessage());
         }
-        
-        Collections.sort(allServices, new Comparator<Booking.ServiceWithDate>() {
-        @Override
-        public int compare(Booking.ServiceWithDate swd1, Booking.ServiceWithDate swd2) {
-            return Double.compare(swd1.getService().getPrice(), swd2.getService().getPrice());
-        }
-    });
     
         return allServices;
     }
@@ -160,19 +226,28 @@ public class HotelReporter {
     public List<Booking.ServiceWithDate> getGuestServicesSortedByDate(String guestName) {
         List<Booking.ServiceWithDate> allServices = new ArrayList<>();
         
-        for (Room room : hotel.getRooms()) {
-            Booking booking = room.getCurrentBooking();
-            if (booking != null && booking.getGuest().getName().equals(guestName)) {
-                allServices.addAll(booking.getServices());
+        try {
+            List<Guest> guests = guestDAO.findAll().stream()
+                .filter(g -> g.getName().equals(guestName))
+                .collect(Collectors.toList());
+            
+            for (Guest guest : guests) {
+                List<Booking> bookings = bookingDAO.findBookingsByGuest(guest.getId());
+                for (Booking booking : bookings) {
+                    allServices.addAll(booking.getServices());
+                }
             }
+            
+            Collections.sort(allServices, new Comparator<Booking.ServiceWithDate>() {
+                @Override
+                public int compare(Booking.ServiceWithDate swd1, Booking.ServiceWithDate swd2) {
+                    return swd1.getDate().compareTo(swd2.getDate());
+                }
+            });
+
+        } catch (Exception e) {
+            System.err.println("Ошибка при получении услуг гостя: " + e.getMessage());
         }
-        
-        Collections.sort(allServices, new Comparator<Booking.ServiceWithDate>() {
-        @Override
-        public int compare(Booking.ServiceWithDate swd1, Booking.ServiceWithDate swd2) {
-            return swd1.getDate().compareTo(swd2.getDate());
-        }
-        });
 
         return allServices;
     }
@@ -198,110 +273,257 @@ public class HotelReporter {
     }
 
     public List<Booking> getLastThreeGuestsOfRoom(String roomNumber) {
-        Room room = hotel.findRoom(roomNumber);
-        if (room == null) {
+        try {
+            Optional<Room> roomOpt = roomDAO.findByNumber(roomNumber);
+            if (roomOpt.isEmpty()) {
+                return new ArrayList<>();
+            }
+            
+            Room room = roomOpt.get();
+            
+            List<Booking> allBookings = bookingDAO.findBookingsByRoom(room.getId());
+            
+            List<Booking> history = allBookings.stream()
+                .filter(booking -> !booking.isActive())
+                .sorted(Comparator.comparing(Booking::getCheckOutDate).reversed())
+                .collect(Collectors.toList());
+            
+            int count = Math.min(3, history.size());
+            return history.subList(0, count);
+            
+        } catch (Exception e) {
+            System.err.println("Ошибка при получении истории номера: " + e.getMessage());
             return new ArrayList<>();
         }
-    
-        List<Booking> history = room.getBookingHistory();
-        
-        int startIndex = Math.max(0, history.size() - 3);
-        return new ArrayList<>(history.subList(startIndex, history.size()));
     }
 
     public void printRoomDetails(String roomNumber) {
-        Room room = hotel.findRoom(roomNumber);
-        if (room == null) {
-            System.out.println("Номер не найден");
-            return;
-        }
-    
-        System.out.println("\n=== ДЕТАЛИ НОМЕРА " + roomNumber + " ===");
-        System.out.println("Тип: " + room.getType());
-        System.out.println("Цена: " + room.getPrice() + " руб.");
-        System.out.println("Вместимость: " + room.getCapacity() + " чел.");
-        System.out.println("Звезды: " + room.getStars());
-        System.out.println("Статус: " + room.getStatus());
-    
-        if (room.getCurrentBooking() != null) {
-            System.out.println("Текущий постоялец: " + room.getCurrentBooking().getGuest().getName());
-            System.out.println("Даты: " + room.getCurrentBooking().getCheckInDate() + " - " + 
-                            room.getCurrentBooking().getCheckOutDate());
-        }
-    
-        List<Booking> history = room.getBookingHistory();
-        System.out.println("История бронирований: " + history.size() + " записей");
-    
-        System.out.println("Последние постояльцы (отображаются последние 3):");
-        List<Booking> lastThree = getLastThreeGuestsOfRoom(roomNumber);
-        for (Booking booking : lastThree) {
-            System.out.println("  - " + booking.getGuest().getName() + 
-                            " (" + booking.getCheckInDate() + " до " + booking.getCheckOutDate() + ")");
+        try {
+            Optional<Room> roomOpt = roomDAO.findByNumber(roomNumber);
+            if (roomOpt.isEmpty()) {
+                System.out.println("Номер не найден");
+                return;
+            }
+        
+            Room room = roomOpt.get();
+        
+            System.out.println("\n=== ДЕТАЛИ НОМЕРА " + roomNumber + " ===");
+            System.out.println("Тип: " + room.getType());
+            System.out.println("Цена: " + room.getPrice() + " руб.");
+            System.out.println("Вместимость: " + room.getCapacity() + " чел.");
+            System.out.println("Звезды: " + room.getStars());
+            System.out.println("Статус: " + room.getStatus());
+        
+            List<Booking> bookings = bookingDAO.findBookingsByRoom(room.getId());
+            Booking activeBooking = null;
+            for (Booking booking : bookings) {
+                if (booking.isActive()) {
+                    activeBooking = booking;
+                    break;
+                }
+            }
+            
+            if (activeBooking != null) {
+                System.out.println("Текущий постоялец: " + activeBooking.getGuest().getName());
+                System.out.println("Даты: " + activeBooking.getCheckInDate() + " - " + 
+                                activeBooking.getCheckOutDate());
+            }
+        
+            List<Booking> history = getLastThreeGuestsOfRoom(roomNumber);
+            System.out.println("История бронирований: " + history.size() + " записей");
+        
+            System.out.println("Последние постояльцы (отображаются последние 3):");
+            for (Booking booking : history) {
+                System.out.println("  - " + booking.getGuest().getName() + 
+                                " (" + booking.getCheckInDate() + " до " + booking.getCheckOutDate() + ")");
+            }
+        } catch (Exception e) {
+            System.out.println("Ошибка при получении деталей номера: " + e.getMessage());
         }
     }
 
     public void printPriceListSortedByCategoryAndPrice() {
-    System.out.println("=== ПРАЙС-ЛИСТ ОТЕЛЯ ===");
-    
-    List<PricedItem> rooms = new ArrayList<>();
-    List<PricedItem> services = new ArrayList<>();
-    
-    for (Room room : hotel.getRooms()) {
-        rooms.add(new PricedItem(
-            "Номер " + room.getNumber() + " (" + room.getType().getDisplayName() + ")",
-            room.getType().getDisplayName(),
-            room.getPrice()
-        ));
-    }
-    
-    for (Service service : hotel.getServices()) {
-        services.add(new PricedItem(
-            "Услуга: " + service.getName(),
-            service.getCategory().getDisplayName(),
-            service.getPrice()
-        ));
-    }
-    
-    Collections.sort(rooms, new Comparator<PricedItem>() {
-        @Override
-        public int compare(PricedItem item1, PricedItem item2) {
-            int categoryCompare = item1.category.compareTo(item2.category);
-            if (categoryCompare != 0) {
-                return categoryCompare;
+        try {
+            System.out.println("=== ПРАЙС-ЛИСТ ОТЕЛЯ ===");
+            
+            List<PricedItem> rooms = new ArrayList<>();
+            List<PricedItem> services = new ArrayList<>();
+            
+            List<Room> allRooms = roomDAO.findAll();
+            for (Room room : allRooms) {
+                rooms.add(new PricedItem(
+                    "Номер " + room.getNumber() + " (" + room.getType().getDisplayName() + ")",
+                    room.getType().getDisplayName(),
+                    room.getPrice()
+                ));
             }
-            return Double.compare(item1.price, item2.price);
-        }
-    });
-    
-    Collections.sort(services, new Comparator<PricedItem>() {
-        @Override
-        public int compare(PricedItem item1, PricedItem item2) {
-            int categoryCompare = item1.category.compareTo(item2.category);
-            if (categoryCompare != 0) {
-                return categoryCompare;
+            
+            List<Service> allServices = serviceDAO.findAll();
+            for (Service service : allServices) {
+                services.add(new PricedItem(
+                    "Услуга: " + service.getName(),
+                    service.getCategory().getDisplayName(),
+                    service.getPrice()
+                ));
             }
-            return Double.compare(item1.price, item2.price);
+            
+            Collections.sort(rooms, new Comparator<PricedItem>() {
+                @Override
+                public int compare(PricedItem item1, PricedItem item2) {
+                    int categoryCompare = item1.category.compareTo(item2.category);
+                    if (categoryCompare != 0) {
+                        return categoryCompare;
+                    }
+                    return Double.compare(item1.price, item2.price);
+                }
+            });
+            
+            Collections.sort(services, new Comparator<PricedItem>() {
+                @Override
+                public int compare(PricedItem item1, PricedItem item2) {
+                    int categoryCompare = item1.category.compareTo(item2.category);
+                    if (categoryCompare != 0) {
+                        return categoryCompare;
+                    }
+                    return Double.compare(item1.price, item2.price);
+                }
+            });
+            
+            System.out.println("\n--- НОМЕРА ---");
+            String currentCategory = "";
+            for (PricedItem item : rooms) {
+                if (!item.category.equals(currentCategory)) {
+                    currentCategory = item.category;
+                    System.out.println("\n" + currentCategory + ":");
+                }
+                System.out.println("  " + item.name + " - " + item.price + " руб.");
+            }
+            
+            System.out.println("\n--- УСЛУГИ ---");
+            currentCategory = "";
+            for (PricedItem item : services) {
+                if (!item.category.equals(currentCategory)) {
+                    currentCategory = item.category;
+                    System.out.println("\n" + currentCategory + ":");
+                }
+                System.out.println("  " + item.name + " - " + item.price + " руб.");
+            }
+        } catch (Exception e) {
+            System.out.println("Ошибка при выводе прайс-листа: " + e.getMessage());
         }
-    });
-    
-    System.out.println("\n--- НОМЕРА ---");
-    String currentCategory = "";
-    for (PricedItem item : rooms) {
-        if (!item.category.equals(currentCategory)) {
-            currentCategory = item.category;
-            System.out.println("\n" + currentCategory + ":");
-        }
-        System.out.println("  " + item.name + " - " + item.price + " руб.");
     }
     
-    System.out.println("\n--- УСЛУГИ ---");
-    currentCategory = "";
-    for (PricedItem item : services) {
-        if (!item.category.equals(currentCategory)) {
-            currentCategory = item.category;
-            System.out.println("\n" + currentCategory + ":");
+    public void printAllRoomsSortedByPrice() {
+        System.out.println("\n=== ВСЕ НОМЕРА (по цене) ===");
+        List<Room> rooms = getRoomsSortedByPrice();
+        for (Room room : rooms) {
+            System.out.printf("Номер: %s, Тип: %s, Цена: %.2f руб., Вместимость: %d, Звезды: %d, Статус: %s%n",
+                room.getNumber(), room.getType(), room.getPrice(), 
+                room.getCapacity(), room.getStars(), room.getStatus());
         }
-        System.out.println("  " + item.name + " - " + item.price + " руб.");
     }
+    
+    public void printAllRoomsSortedByCapacity() {
+        System.out.println("\n=== ВСЕ НОМЕРА (по вместимости) ===");
+        List<Room> rooms = getRoomsSortedByCapacity();
+        for (Room room : rooms) {
+            System.out.printf("Номер: %s, Вместимость: %d, Тип: %s, Цена: %.2f руб., Звезды: %d%n",
+                room.getNumber(), room.getCapacity(), room.getType(), 
+                room.getPrice(), room.getStars());
+        }
+    }
+    
+    public void printAllRoomsSortedByStars() {
+        System.out.println("\n=== ВСЕ НОМЕРА (по звездам) ===");
+        List<Room> rooms = getRoomsSortedByStars();
+        for (Room room : rooms) {
+            System.out.printf("Номер: %s, Звезды: %d, Тип: %s, Цена: %.2f руб., Вместимость: %d%n",
+                room.getNumber(), room.getStars(), room.getType(), 
+                room.getPrice(), room.getCapacity());
+        }
+    }
+    
+    public void printAvailableRoomsSortedByPrice() {
+        System.out.println("\n=== СВОБОДНЫЕ НОМЕРА (по цене) ===");
+        List<Room> rooms = getAvailableRoomsSortedByPrice();
+        if (rooms.isEmpty()) {
+            System.out.println("Нет свободных номеров");
+            return;
+        }
+        for (Room room : rooms) {
+            System.out.printf("Номер: %s, Цена: %.2f руб., Тип: %s, Вместимость: %d, Звезды: %d%n",
+                room.getNumber(), room.getPrice(), room.getType(), 
+                room.getCapacity(), room.getStars());
+        }
+    }
+    
+    public void printAvailableRoomsSortedByCapacity() {
+        System.out.println("\n=== СВОБОДНЫЕ НОМЕРА (по вместимости) ===");
+        List<Room> rooms = getAvailableRoomsSortedByCapacity();
+        if (rooms.isEmpty()) {
+            System.out.println("Нет свободных номеров");
+            return;
+        }
+        for (Room room : rooms) {
+            System.out.printf("Номер: %s, Вместимость: %d, Цена: %.2f руб., Тип: %s, Звезды: %d%n",
+                room.getNumber(), room.getCapacity(), room.getPrice(), 
+                room.getType(), room.getStars());
+        }
+    }
+    
+    public void printAvailableRoomsSortedByStars() {
+        System.out.println("\n=== СВОБОДНЫЕ НОМЕРА (по звездам) ===");
+        List<Room> rooms = getAvailableRoomsSortedByStars();
+        if (rooms.isEmpty()) {
+            System.out.println("Нет свободных номеров");
+            return;
+        }
+        for (Room room : rooms) {
+            System.out.printf("Номер: %s, Звезды: %d, Цена: %.2f руб., Тип: %s, Вместимость: %d%n",
+                room.getNumber(), room.getStars(), room.getPrice(), 
+                room.getType(), room.getCapacity());
+        }
+    }
+    
+    public void printGuestsSortedByName() {
+        System.out.println("\n=== ПОСТОЯЛЬЦЫ (по имени) ===");
+        List<Booking> bookings = getGuestsAndRoomsSortedByName();
+        if (bookings.isEmpty()) {
+            System.out.println("Нет активных бронирований");
+            return;
+        }
+        for (Booking booking : bookings) {
+            System.out.printf("Гость: %s, Паспорт: %s, Комната: %s, Заезд: %s, Выезд: %s%n",
+                booking.getGuest().getName(), booking.getGuest().getPassportNumber(),
+                booking.getRoom().getNumber(), booking.getCheckInDate(), booking.getCheckOutDate());
+        }
+    }
+    
+    public void printGuestsSortedByCheckoutDate() {
+        System.out.println("\n=== ПОСТОЯЛЬЦЫ (по дате выезда) ===");
+        List<Booking> bookings = getGuestsAndRoomsSortedByCheckoutDate();
+        if (bookings.isEmpty()) {
+            System.out.println("Нет активных бронирований");
+            return;
+        }
+        for (Booking booking : bookings) {
+            System.out.printf("Выезд: %s, Гость: %s, Комната: %s, Заезд: %s%n",
+                booking.getCheckOutDate(), booking.getGuest().getName(),
+                booking.getRoom().getNumber(), booking.getCheckInDate());
+        }
+    }
+    
+    public void printRoomsAvailableByDate(LocalDate date) {
+        System.out.println("\n=== НОМЕРА, СВОБОДНЫЕ НА ДАТУ " + date + " ===");
+        List<Room> rooms = getRoomsAvailableByDate(date);
+        if (rooms.isEmpty()) {
+            System.out.println("Нет свободных номеров на эту дату");
+            return;
+        }
+        for (Room room : rooms) {
+            System.out.printf("Номер: %s, Тип: %s, Цена: %.2f руб., Вместимость: %d, Звезды: %d%n",
+                room.getNumber(), room.getType(), room.getPrice(), 
+                room.getCapacity(), room.getStars());
+        }
     }
 }

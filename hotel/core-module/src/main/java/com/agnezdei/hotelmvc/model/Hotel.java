@@ -1,21 +1,25 @@
 package com.agnezdei.hotelmvc.model;
 
-import java.io.Serializable;
-
 import java.util.ArrayList;
 import java.util.List;
 
-public class Hotel implements Serializable {
+import com.agnezdei.hotelmvc.dao.implementations.BookingDAO;
+import com.agnezdei.hotelmvc.dao.implementations.GuestDAO;
+import com.agnezdei.hotelmvc.dao.implementations.RoomDAO;
+import com.agnezdei.hotelmvc.dao.implementations.ServiceDAO;
+import com.agnezdei.hotelmvc.exceptions.DAOException;
+
+public class Hotel {
     private String name;
     private List<Room> rooms;
     private List<Service> services;
     private List<Guest> guests;
     private List<Booking> bookings;
 
-    private long nextRoomId = 1;
-    private long nextServiceId = 1;
-    private long nextGuestId = 1;
-    private long nextBookingId = 1;
+    private transient RoomDAO roomDAO;
+    private transient GuestDAO guestDAO;
+    private transient ServiceDAO serviceDAO;
+    private transient BookingDAO bookingDAO;
     
     public Hotel(String name) {
         this.name = name;
@@ -24,6 +28,62 @@ public class Hotel implements Serializable {
         this.guests = new ArrayList<>();
         this.bookings = new ArrayList<>();
     }
+
+    public Hotel() {
+    }
+    
+    public void loadFromDatabase() throws DAOException {
+        if (roomDAO != null) {
+            rooms = roomDAO.findAll();
+        }
+        if (guestDAO != null) {
+            guests = guestDAO.findAll();
+        }
+        if (serviceDAO != null) {
+            services = serviceDAO.findAll();
+        }
+        if (bookingDAO != null) {
+            bookings = bookingDAO.findAll();
+        }
+    }
+    
+    public void saveToDatabase() throws DAOException {
+        for (Room room : rooms) {
+            if (room.getId() == null) {
+                roomDAO.save(room);
+            } else {
+                roomDAO.update(room);
+            }
+        }
+        for (Service service : services) {
+            if (service.getId() == null) {
+                serviceDAO.save(service);
+            } else {
+                serviceDAO.update(service);
+            }
+        }
+
+        for (Guest guest : guests) {
+            if (guest.getId() == null) {
+                guestDAO.save(guest);
+            } else {
+                guestDAO.update(guest);
+            }
+        }
+
+        for (Booking booking : bookings) {
+            if (booking.getId() == null) {
+                bookingDAO.save(booking);
+            } else {
+                bookingDAO.update(booking);
+            }
+        }
+    }
+
+    public void setRoomDAO(RoomDAO roomDAO) { this.roomDAO = roomDAO; }
+    public void setGuestDAO(GuestDAO guestDAO) { this.guestDAO = guestDAO; }
+    public void setServiceDAO(ServiceDAO serviceDAO) { this.serviceDAO = serviceDAO; }
+    public void setBookingDAO(BookingDAO bookingDAO) { this.bookingDAO = bookingDAO; }
     
     public String getName() { return name; }
     public List<Room> getRooms() { return new ArrayList<>(rooms); }
@@ -31,10 +91,6 @@ public class Hotel implements Serializable {
     public List<Guest> getGuests() { return new ArrayList<>(guests); }
     public List<Booking> getBookings() { return new ArrayList<>(bookings); }
 
-    public Long getNextRoomId() { return nextRoomId++; }
-    public Long getNextServiceId() { return nextServiceId++; }
-    public Long getNextGuestId() { return nextGuestId++; }
-    public Long getNextBookingId() { return nextBookingId++; }
 
     public void addGuest(Guest guest) {
         guests.add(guest);

@@ -1,4 +1,3 @@
-id,number,type,price,capacity,stars,status
-1,101,Стандарт,2500.00,2,3,Доступен
-2,102,Люкс,5000.00,3,5,Доступен
-3,103,Стандарт,2000.00,2,3,Доступен
+number,type,price,capacity,stars,status
+203,STANDARD,3500.00,3,4,AVAILABLE
+103,STANDARD,2500.00,2,3,UNDER_MAINTENANCE

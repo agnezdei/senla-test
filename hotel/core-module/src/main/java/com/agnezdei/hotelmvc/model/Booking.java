@@ -1,9 +1,9 @@
 package com.agnezdei.hotelmvc.model;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.io.Serializable;
 
 public class Booking implements Serializable {
     private Long id;
@@ -20,19 +20,33 @@ public class Booking implements Serializable {
         this.room = room;
         this.checkInDate = checkInDate;
         this.checkOutDate = checkOutDate;
+    }
+    
+    public Booking() {
         this.services = new ArrayList<>();
         this.isActive = true;
     }
-    
-    public Long getId() { return id; }
-    public Guest getGuest() { return guest; }
-    public Room getRoom() { return room; }
-    public LocalDate getCheckInDate() { return checkInDate; }
-    public LocalDate getCheckOutDate() { return checkOutDate; }
-    public List<ServiceWithDate> getServices() { return new ArrayList<>(services); }
-    public boolean isActive() { return isActive; }
 
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public Guest getGuest() { return guest; }
+    public void setGuest(Guest guest) { this.guest = guest; }
+    public Room getRoom() { return room; }
+    public void setRoom(Room room) { this.room = room; }
+    public LocalDate getCheckInDate() { return checkInDate; }
+    public void setCheckInDate(LocalDate checkInDate) { this.checkInDate = checkInDate; }
+    public LocalDate getCheckOutDate() { return checkOutDate; }
     public void setCheckOutDate(LocalDate checkOutDate) { this.checkOutDate = checkOutDate; }
+    
+    public List<ServiceWithDate> getServices() { 
+        if (services == null) {
+            services = new ArrayList<>();
+        }
+        return new ArrayList<>(services); 
+    }
+    public void setServices(List<ServiceWithDate> services) { this.services = services; }
+   
+    public boolean isActive() { return isActive; }
     public void setActive(boolean active) { isActive = active; }
     
     public static class ServiceWithDate implements Serializable{
@@ -43,9 +57,14 @@ public class Booking implements Serializable {
             this.service = service;
             this.date = date;
         }
+
+        public ServiceWithDate(){
+        }
         
         public Service getService() { return service; }
+        public void setService(Service service) {this.service = service; }
         public LocalDate getDate() { return date; }
+        public void setDate(LocalDate date) { this.date = date; }
     }
 
     public void addService(Service service, LocalDate serviceDate) {

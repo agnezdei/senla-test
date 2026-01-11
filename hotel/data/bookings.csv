@@ -1,3 +1,6 @@
-id,guestId,roomId,checkInDate,checkOutDate,isActive
-1,1,1,2024-01-15,2024-01-20,false
-2,2,2,2024-01-18,2024-01-25,true
+guest_passport,room_number,check_in_date,check_out_date,is_active
+111111,202,2024-01-15,2024-01-20,false
+222222,301,2024-01-18,2024-01-25,false
+888888,202,2025-03-03,2025-03-10,false
+444444,101,2025-07-25,2025-08-01,false
+222222,301,2025-10-10,2025-10-20,false
