@@ -8,14 +8,14 @@ import java.util.List;
 import java.util.Optional;
 
 import com.agnezdei.hotelmvc.annotations.Inject;
-import com.agnezdei.hotelmvc.dao.implementations.RoomDAO;
 import com.agnezdei.hotelmvc.model.Room;
 import com.agnezdei.hotelmvc.model.RoomStatus;
 import com.agnezdei.hotelmvc.model.RoomType;
+import com.agnezdei.hotelmvc.repository.impl.RoomRepository;
 
 public class RoomCsvImporter {
     @Inject
-    private RoomDAO roomDAO;
+    private RoomRepository roomDAO;
     
     public RoomCsvImporter() {
     }

@@ -8,20 +8,15 @@ import java.sql.SQLException;
 import java.util.Properties;
 
 public class DatabaseConfig {
-    // Singleton instance
     private static DatabaseConfig instance;
-    
-    // Единственное соединение для всего приложения
     private static Connection connection;
     private final Properties properties;
     
-    // Приватный конструктор
     private DatabaseConfig() {
         properties = loadProperties();
         initializeDriver();
     }
     
-    // Глобальная точка доступа
     public static synchronized DatabaseConfig getInstance() {
         if (instance == null) {
             instance = new DatabaseConfig();
@@ -29,16 +24,14 @@ public class DatabaseConfig {
         return instance;
     }
     
-    // СТАТИЧЕСКИЙ метод для получения соединения (теперь может вызываться из static контекста)
-    public static synchronized Connection getConnection() throws SQLException {
+    public Connection getConnection() throws SQLException {
         if (connection == null || connection.isClosed()) {
             connection = createConnection();
         }
         return connection;
     }
     
-    // Закрытие соединения
-    public static synchronized void closeConnection() {
+    public void closeConnection() {
         if (connection != null) {
             try {
                 if (!connection.isClosed()) {
@@ -47,7 +40,7 @@ public class DatabaseConfig {
             } catch (SQLException e) {
                 System.err.println("Ошибка при закрытии соединения: " + e.getMessage());
             } finally {
-                connection = null; // Обнуляем, чтобы можно было пересоздать
+                connection = null;
             }
         }
     }
@@ -76,11 +69,10 @@ public class DatabaseConfig {
         }
     }
     
-    private static Connection createConnection() throws SQLException {
-        DatabaseConfig instance = getInstance();
-        String url = instance.properties.getProperty("db.url");
-        String user = instance.properties.getProperty("db.user", "");
-        String password = instance.properties.getProperty("db.password", "");
+    private Connection createConnection() throws SQLException {
+        String url = properties.getProperty("db.url");
+        String user = properties.getProperty("db.user", "");
+        String password = properties.getProperty("db.password", "");
         
         Connection conn = DriverManager.getConnection(url, user, password);
         
@@ -96,8 +88,19 @@ public class DatabaseConfig {
         return conn;
     }
     
-    // Геттер для свойств (если нужно)
     public String getProperty(String key) {
         return properties.getProperty(key);
     }
+
+    public abstract class BaseRepository {
+    protected final DatabaseConfig databaseConfig;
+    
+    public BaseRepository(DatabaseConfig databaseConfig) {
+        this.databaseConfig = databaseConfig;
+    }
+    
+    protected Connection getConnection() throws SQLException {
+        return databaseConfig.getConnection();
+    }
+}
 }

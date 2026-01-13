@@ -5,28 +5,28 @@ import java.io.IOException;
 import java.util.List;
 
 import com.agnezdei.hotelmvc.annotations.Inject;
-import com.agnezdei.hotelmvc.dao.implementations.BookingDAO;
-import com.agnezdei.hotelmvc.dao.implementations.GuestDAO;
-import com.agnezdei.hotelmvc.dao.implementations.RoomDAO;
-import com.agnezdei.hotelmvc.dao.implementations.ServiceDAO;
 import com.agnezdei.hotelmvc.exceptions.DAOException;
 import com.agnezdei.hotelmvc.model.Booking;
 import com.agnezdei.hotelmvc.model.Guest;
 import com.agnezdei.hotelmvc.model.Room;
 import com.agnezdei.hotelmvc.model.Service;
+import com.agnezdei.hotelmvc.repository.impl.BookingRepository;
+import com.agnezdei.hotelmvc.repository.impl.GuestRepository;
+import com.agnezdei.hotelmvc.repository.impl.RoomRepository;
+import com.agnezdei.hotelmvc.repository.impl.ServiceRepository;
 
 public class CsvExporter {
     @Inject
-    private RoomDAO roomDAO;
+    private RoomRepository roomDAO;
     
     @Inject
-    private GuestDAO guestDAO;
+    private GuestRepository guestDAO;
     
     @Inject
-    private ServiceDAO serviceDAO;
+    private ServiceRepository serviceDAO;
     
     @Inject
-    private BookingDAO bookingDAO;
+    private BookingRepository bookingDAO;
     
     public CsvExporter() {
     }

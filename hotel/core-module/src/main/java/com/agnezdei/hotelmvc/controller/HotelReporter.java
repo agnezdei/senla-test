@@ -1,8 +1,8 @@
 package com.agnezdei.hotelmvc.controller;
 
 import com.agnezdei.hotelmvc.annotations.Inject;
-import com.agnezdei.hotelmvc.dao.implementations.*;
 import com.agnezdei.hotelmvc.model.*;
+import com.agnezdei.hotelmvc.repository.impl.*;
 
 import java.time.LocalDate;
 import java.util.*;
@@ -10,16 +10,19 @@ import java.util.stream.Collectors;
 
 public class HotelReporter {
     @Inject
-    private RoomDAO roomDAO;
+    private RoomRepository roomDAO;
     
     @Inject
-    private GuestDAO guestDAO;
+    private GuestRepository guestDAO;
     
     @Inject
-    private ServiceDAO serviceDAO;
+    private ServiceRepository serviceDAO;
     
     @Inject
-    private BookingDAO bookingDAO;
+    private BookingRepository bookingDAO;
+
+    @Inject
+    private BookingServiceRepository bookingServiceDAO;
     
     private static class PricedItem {
         String name;
@@ -146,7 +149,7 @@ public class HotelReporter {
         }
         
         try {
-            List<Booking> bookings = bookingDAO.findBookingsByRoom(room.getId());
+            List<Booking> bookings = bookingDAO.findByRoomId(room.getId());
             for (Booking booking : bookings) {
                 if (booking.isActive() && 
                     !date.isBefore(booking.getCheckInDate()) && 
@@ -160,7 +163,7 @@ public class HotelReporter {
         
         return true;
     }
-
+    
     public int getTotalGuests() {
         try {
             return bookingDAO.findActiveBookings().size();
@@ -169,7 +172,7 @@ public class HotelReporter {
             return 0;
         }
     }
-
+    
     public double getPaymentAmountForRoom(String roomNumber) {
         try {
             Optional<Room> roomOpt = roomDAO.findByNumber(roomNumber);
@@ -179,10 +182,18 @@ public class HotelReporter {
             
             Room room = roomOpt.get();
             
-            List<Booking> bookings = bookingDAO.findBookingsByRoom(room.getId());
+            List<Booking> bookings = bookingDAO.findByRoomId(room.getId());
             for (Booking booking : bookings) {
                 if (booking.isActive()) {
-                    return booking.calculateTotalPrice();
+                    long days = booking.getCheckOutDate().toEpochDay() - booking.getCheckInDate().toEpochDay();
+                    double roomCost = room.getPrice() * days;
+                    
+                    List<BookingService> services = bookingServiceDAO.findByBookingId(booking.getId());
+                    double servicesCost = services.stream()
+                        .mapToDouble(bs -> bs.getService().getPrice())
+                        .sum();
+                    
+                    return roomCost + servicesCost;
                 }
             }
             
@@ -192,9 +203,9 @@ public class HotelReporter {
             return 0.0;
         }
     }
-
-    public List<Booking.ServiceWithDate> getGuestServicesSortedByPrice(String guestName) {
-        List<Booking.ServiceWithDate> allServices = new ArrayList<>();
+    
+    public List<ServiceWithDate> getGuestServicesSortedByPrice(String guestName) {
+        List<ServiceWithDate> allServices = new ArrayList<>();
         
         try {
             List<Guest> guests = guestDAO.findAll().stream()
@@ -202,15 +213,18 @@ public class HotelReporter {
                 .collect(Collectors.toList());
             
             for (Guest guest : guests) {
-                List<Booking> bookings = bookingDAO.findBookingsByGuest(guest.getId());
+                List<Booking> bookings = bookingDAO.findByGuestId(guest.getId());
                 for (Booking booking : bookings) {
-                    allServices.addAll(booking.getServices());
+                    List<BookingService> bookingServices = bookingServiceDAO.findByBookingId(booking.getId());
+                    for (BookingService bs : bookingServices) {
+                        allServices.add(new ServiceWithDate(bs.getService(), bs.getServiceDate()));
+                    }
                 }
             }
             
-            Collections.sort(allServices, new Comparator<Booking.ServiceWithDate>() {
+            Collections.sort(allServices, new Comparator<ServiceWithDate>() {
                 @Override
-                public int compare(Booking.ServiceWithDate swd1, Booking.ServiceWithDate swd2) {
+                public int compare(ServiceWithDate swd1, ServiceWithDate swd2) {
                     return Double.compare(swd1.getService().getPrice(), swd2.getService().getPrice());
                 }
             });
@@ -221,10 +235,9 @@ public class HotelReporter {
     
         return allServices;
     }
-
-
-    public List<Booking.ServiceWithDate> getGuestServicesSortedByDate(String guestName) {
-        List<Booking.ServiceWithDate> allServices = new ArrayList<>();
+    
+    public List<ServiceWithDate> getGuestServicesSortedByDate(String guestName) {
+        List<ServiceWithDate> allServices = new ArrayList<>();
         
         try {
             List<Guest> guests = guestDAO.findAll().stream()
@@ -232,15 +245,18 @@ public class HotelReporter {
                 .collect(Collectors.toList());
             
             for (Guest guest : guests) {
-                List<Booking> bookings = bookingDAO.findBookingsByGuest(guest.getId());
+                List<Booking> bookings = bookingDAO.findByGuestId(guest.getId());
                 for (Booking booking : bookings) {
-                    allServices.addAll(booking.getServices());
+                    List<BookingService> bookingServices = bookingServiceDAO.findByBookingId(booking.getId());
+                    for (BookingService bs : bookingServices) {
+                        allServices.add(new ServiceWithDate(bs.getService(), bs.getServiceDate()));
+                    }
                 }
             }
             
-            Collections.sort(allServices, new Comparator<Booking.ServiceWithDate>() {
+            Collections.sort(allServices, new Comparator<ServiceWithDate>() {
                 @Override
-                public int compare(Booking.ServiceWithDate swd1, Booking.ServiceWithDate swd2) {
+                public int compare(ServiceWithDate swd1, ServiceWithDate swd2) {
                     return swd1.getDate().compareTo(swd2.getDate());
                 }
             });
@@ -251,27 +267,23 @@ public class HotelReporter {
 
         return allServices;
     }
-
+    
     public void printGuestServicesSortedByPrice(String guestName) {
         System.out.println("\n=== УСЛУГИ " + guestName + " (по цене) ===");
-        List<Booking.ServiceWithDate> services = getGuestServicesSortedByPrice(guestName);
-        for (Booking.ServiceWithDate serviceWithDate : services) {
-            System.out.println(serviceWithDate.getService().getName() + 
-                             " - " + serviceWithDate.getService().getPrice() + " руб." +
-                             " (дата: " + serviceWithDate.getDate() + ")");
+        List<ServiceWithDate> services = getGuestServicesSortedByPrice(guestName);
+        for (ServiceWithDate serviceWithDate : services) {
+            System.out.println(serviceWithDate);
         }
     }
-
+    
     public void printGuestServicesSortedByDate(String guestName) {
         System.out.println("\n=== УСЛУГИ " + guestName + " (по дате) ===");
-        List<Booking.ServiceWithDate> services = getGuestServicesSortedByDate(guestName);
-        for (Booking.ServiceWithDate serviceWithDate : services) {
-            System.out.println(serviceWithDate.getService().getName() + 
-                             " - " + serviceWithDate.getService().getPrice() + " руб." +
-                             " (дата: " + serviceWithDate.getDate() + ")");
+        List<ServiceWithDate> services = getGuestServicesSortedByDate(guestName);
+        for (ServiceWithDate serviceWithDate : services) {
+            System.out.println(serviceWithDate);
         }
     }
-
+    
     public List<Booking> getLastThreeGuestsOfRoom(String roomNumber) {
         try {
             Optional<Room> roomOpt = roomDAO.findByNumber(roomNumber);
@@ -281,7 +293,7 @@ public class HotelReporter {
             
             Room room = roomOpt.get();
             
-            List<Booking> allBookings = bookingDAO.findBookingsByRoom(room.getId());
+            List<Booking> allBookings = bookingDAO.findByRoomId(room.getId());
             
             List<Booking> history = allBookings.stream()
                 .filter(booking -> !booking.isActive())
@@ -296,7 +308,7 @@ public class HotelReporter {
             return new ArrayList<>();
         }
     }
-
+    
     public void printRoomDetails(String roomNumber) {
         try {
             Optional<Room> roomOpt = roomDAO.findByNumber(roomNumber);
@@ -314,7 +326,7 @@ public class HotelReporter {
             System.out.println("Звезды: " + room.getStars());
             System.out.println("Статус: " + room.getStatus());
         
-            List<Booking> bookings = bookingDAO.findBookingsByRoom(room.getId());
+            List<Booking> bookings = bookingDAO.findByRoomId(room.getId());
             Booking activeBooking = null;
             for (Booking booking : bookings) {
                 if (booking.isActive()) {
@@ -327,6 +339,15 @@ public class HotelReporter {
                 System.out.println("Текущий постоялец: " + activeBooking.getGuest().getName());
                 System.out.println("Даты: " + activeBooking.getCheckInDate() + " - " + 
                                 activeBooking.getCheckOutDate());
+                
+                List<BookingService> services = bookingServiceDAO.findByBookingId(activeBooking.getId());
+                if (!services.isEmpty()) {
+                    System.out.println("Услуги в бронировании:");
+                    for (BookingService bs : services) {
+                        System.out.println("  - " + bs.getService().getName() + 
+                                         " (" + bs.getServiceDate() + ")");
+                    }
+                }
             }
         
             List<Booking> history = getLastThreeGuestsOfRoom(roomNumber);
@@ -339,6 +360,38 @@ public class HotelReporter {
             }
         } catch (Exception e) {
             System.out.println("Ошибка при получении деталей номера: " + e.getMessage());
+        }
+    }
+    
+    // Новый метод для получения всех услуг бронирования
+    public void printBookingServices(Long bookingId) {
+        try {
+            Optional<Booking> bookingOpt = bookingDAO.findById(bookingId);
+            if (bookingOpt.isEmpty()) {
+                System.out.println("Бронирование не найдено");
+                return;
+            }
+            
+            Booking booking = bookingOpt.get();
+            System.out.println("\n=== УСЛУГИ БРОНИРОВАНИЯ " + bookingId + " ===");
+            System.out.println("Гость: " + booking.getGuest().getName());
+            System.out.println("Номер: " + booking.getRoom().getNumber());
+            
+            List<BookingService> services = bookingServiceDAO.findByBookingId(bookingId);
+            if (services.isEmpty()) {
+                System.out.println("Услуги не найдены");
+            } else {
+                double total = 0;
+                for (BookingService bs : services) {
+                    System.out.println("  - " + bs.getService().getName() + 
+                                     ", цена: " + bs.getService().getPrice() + " руб." +
+                                     ", дата: " + bs.getServiceDate());
+                    total += bs.getService().getPrice();
+                }
+                System.out.println("Общая стоимость услуг: " + total + " руб.");
+            }
+        } catch (Exception e) {
+            System.out.println("Ошибка при получении услуг бронирования: " + e.getMessage());
         }
     }
 

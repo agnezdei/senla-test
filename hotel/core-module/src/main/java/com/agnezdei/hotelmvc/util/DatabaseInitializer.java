@@ -1,64 +1,55 @@
 package com.agnezdei.hotelmvc.util;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.sql.Statement;
 
 import com.agnezdei.hotelmvc.config.DatabaseConfig;
 
 public class DatabaseInitializer {
-    public static void initialize() throws Exception {
-        System.out.println("Инициализация базы данных...");
+    
+    public static void initialize(DatabaseConfig databaseConfig) throws SQLException, IOException {
+        executeScript(databaseConfig, "schema.sql");
+        executeScript(databaseConfig, "data.sql");
+    }
+    
+    private static void executeScript(DatabaseConfig databaseConfig, String scriptFileName) 
+            throws SQLException, IOException {
         
-        try (Connection conn = DatabaseConfig.getConnection();
+        try (Connection conn = databaseConfig.getConnection();
              Statement stmt = conn.createStatement()) {
             
-            String schema = loadResourceFile("/schema.sql");
-            executeScript(stmt, schema);
+            InputStream inputStream = DatabaseInitializer.class
+                .getClassLoader()
+                .getResourceAsStream(scriptFileName);
             
-            String data = loadResourceFile("/data.sql");
-            executeScript(stmt, data);
+            if (inputStream == null) {
+                throw new IOException("Файл скрипта не найден: " + scriptFileName);
+            }
             
-            System.out.println("База данных инициализирована");
-        }
-    }
-    
-    private static void executeScript(Statement stmt, String script) throws Exception {
-        if (script == null || script.trim().isEmpty()) {
-            return;
-        }
-        
-        String[] commands = script.split(";");
-        for (String command : commands) {
-            String trimmed = command.trim();
-            if (!trimmed.isEmpty()) {
-                try {
-                    stmt.execute(trimmed);
-                } catch (Exception e) {
-                    System.err.println("Ошибка выполнения SQL: " + trimmed.substring(0, Math.min(50, trimmed.length())));
-                    throw e;
+            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
+            StringBuilder script = new StringBuilder();
+            String line;
+            
+            while ((line = reader.readLine()) != null) {
+                if (line.trim().isEmpty() || line.trim().startsWith("--")) {
+                    continue;
+                }
+                script.append(line);
+                if (line.trim().endsWith(";")) {
+                    stmt.execute(script.toString());
+                    script = new StringBuilder();
                 }
             }
-        }
-    }
-    
-    private static String loadResourceFile(String fileName) throws Exception {
-        try (InputStream input = DatabaseInitializer.class
-                .getResourceAsStream(fileName);
-             BufferedReader reader = new BufferedReader(new InputStreamReader(input))) {
             
-            if (input == null) {
-                throw new RuntimeException("Файл не найден в classpath: " + fileName);
+            if (script.length() > 0) {
+                stmt.execute(script.toString());
             }
             
-            StringBuilder content = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                content.append(line).append("\n");
-            }
-            return content.toString();
         }
     }
 }

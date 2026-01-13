@@ -8,13 +8,13 @@ import java.util.List;
 import java.util.Optional;
 
 import com.agnezdei.hotelmvc.annotations.Inject;
-import com.agnezdei.hotelmvc.dao.implementations.ServiceDAO;
 import com.agnezdei.hotelmvc.model.Service;
 import com.agnezdei.hotelmvc.model.ServiceCategory;
+import com.agnezdei.hotelmvc.repository.impl.ServiceRepository;
 
 public class ServiceCsvImporter {
     @Inject
-    private ServiceDAO serviceDAO;
+    private ServiceRepository serviceDAO;
 
     public ServiceCsvImporter() {
     }

@@ -3,11 +3,11 @@ package com.agnezdei.hotelmvc.model;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.agnezdei.hotelmvc.dao.implementations.BookingDAO;
-import com.agnezdei.hotelmvc.dao.implementations.GuestDAO;
-import com.agnezdei.hotelmvc.dao.implementations.RoomDAO;
-import com.agnezdei.hotelmvc.dao.implementations.ServiceDAO;
 import com.agnezdei.hotelmvc.exceptions.DAOException;
+import com.agnezdei.hotelmvc.repository.impl.BookingRepository;
+import com.agnezdei.hotelmvc.repository.impl.GuestRepository;
+import com.agnezdei.hotelmvc.repository.impl.RoomRepository;
+import com.agnezdei.hotelmvc.repository.impl.ServiceRepository;
 
 public class Hotel {
     private String name;
@@ -16,10 +16,10 @@ public class Hotel {
     private List<Guest> guests;
     private List<Booking> bookings;
 
-    private transient RoomDAO roomDAO;
-    private transient GuestDAO guestDAO;
-    private transient ServiceDAO serviceDAO;
-    private transient BookingDAO bookingDAO;
+    private transient RoomRepository roomDAO;
+    private transient GuestRepository guestDAO;
+    private transient ServiceRepository serviceDAO;
+    private transient BookingRepository bookingDAO;
     
     public Hotel(String name) {
         this.name = name;
@@ -80,10 +80,10 @@ public class Hotel {
         }
     }
 
-    public void setRoomDAO(RoomDAO roomDAO) { this.roomDAO = roomDAO; }
-    public void setGuestDAO(GuestDAO guestDAO) { this.guestDAO = guestDAO; }
-    public void setServiceDAO(ServiceDAO serviceDAO) { this.serviceDAO = serviceDAO; }
-    public void setBookingDAO(BookingDAO bookingDAO) { this.bookingDAO = bookingDAO; }
+    public void setRoomDAO(RoomRepository roomDAO) { this.roomDAO = roomDAO; }
+    public void setGuestDAO(GuestRepository guestDAO) { this.guestDAO = guestDAO; }
+    public void setServiceDAO(ServiceRepository serviceDAO) { this.serviceDAO = serviceDAO; }
+    public void setBookingDAO(BookingRepository bookingDAO) { this.bookingDAO = bookingDAO; }
     
     public String getName() { return name; }
     public List<Room> getRooms() { return new ArrayList<>(rooms); }
