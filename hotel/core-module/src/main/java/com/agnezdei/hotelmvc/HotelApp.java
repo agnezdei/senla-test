@@ -11,7 +11,6 @@ import com.agnezdei.hotelmvc.csv.GuestCsvImporter;
 import com.agnezdei.hotelmvc.csv.RoomCsvImporter;
 import com.agnezdei.hotelmvc.csv.ServiceCsvImporter;
 import com.agnezdei.hotelmvc.di.DependencyContainer;
-import com.agnezdei.hotelmvc.model.Hotel;
 import com.agnezdei.hotelmvc.repository.impl.BookingRepository;
 import com.agnezdei.hotelmvc.repository.impl.BookingServiceRepository;
 import com.agnezdei.hotelmvc.repository.impl.GuestRepository;
@@ -72,9 +71,6 @@ public class HotelApp {
             container.inject(bookingImporter);
             container.inject(bookingServiceImporter);
             container.inject(csvExporter);
-            
-            Hotel hotel = new Hotel("Гранд Отель");
-            container.register(Hotel.class, hotel);
             
             System.out.println("Создание контроллеров...");
             HotelAdmin admin = container.create(HotelAdmin.class);

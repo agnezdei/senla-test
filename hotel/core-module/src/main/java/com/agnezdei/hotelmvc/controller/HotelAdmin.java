@@ -1,16 +1,37 @@
 package com.agnezdei.hotelmvc.controller;
 
 import java.io.IOException;
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
 import com.agnezdei.hotelmvc.annotations.Inject;
 import com.agnezdei.hotelmvc.config.AppConfig;
-import com.agnezdei.hotelmvc.csv.*;
-import com.agnezdei.hotelmvc.exceptions.*;
-import com.agnezdei.hotelmvc.model.*;
-import com.agnezdei.hotelmvc.repository.impl.*;
+import com.agnezdei.hotelmvc.config.DatabaseConfig;
+import com.agnezdei.hotelmvc.csv.BookingCsvImporter;
+import com.agnezdei.hotelmvc.csv.BookingServiceCsvImporter;
+import com.agnezdei.hotelmvc.csv.CsvExporter;
+import com.agnezdei.hotelmvc.csv.GuestCsvImporter;
+import com.agnezdei.hotelmvc.csv.RoomCsvImporter;
+import com.agnezdei.hotelmvc.csv.ServiceCsvImporter;
+import com.agnezdei.hotelmvc.exceptions.BusinessLogicException;
+import com.agnezdei.hotelmvc.exceptions.DAOException;
+import com.agnezdei.hotelmvc.exceptions.EntityNotFoundException;
+import com.agnezdei.hotelmvc.model.Booking;
+import com.agnezdei.hotelmvc.model.BookingService;
+import com.agnezdei.hotelmvc.model.Guest;
+import com.agnezdei.hotelmvc.model.Room;
+import com.agnezdei.hotelmvc.model.RoomStatus;
+import com.agnezdei.hotelmvc.model.RoomType;
+import com.agnezdei.hotelmvc.model.Service;
+import com.agnezdei.hotelmvc.model.ServiceCategory;
+import com.agnezdei.hotelmvc.repository.impl.BookingRepository;
+import com.agnezdei.hotelmvc.repository.impl.BookingServiceRepository;
+import com.agnezdei.hotelmvc.repository.impl.GuestRepository;
+import com.agnezdei.hotelmvc.repository.impl.RoomRepository;
+import com.agnezdei.hotelmvc.repository.impl.ServiceRepository;
+import com.agnezdei.hotelmvc.util.TransactionManager;
 
 public class HotelAdmin {
     @Inject
@@ -49,6 +70,9 @@ public class HotelAdmin {
     @Inject
     private BookingServiceCsvImporter bookingServiceImporter;
 
+    @Inject
+    private DatabaseConfig databaseConfig;
+    
     public HotelAdmin() {
     }
     
@@ -141,61 +165,75 @@ public class HotelAdmin {
     }
     
     public String settleGuest(String roomNumber, Guest guest, LocalDate checkInDate, LocalDate checkOutDate) 
-            throws EntityNotFoundException, BusinessLogicException {
+        throws EntityNotFoundException, BusinessLogicException {
+    
+    try {
+        TransactionManager.beginTransaction(databaseConfig);
         
-        try {
-            Optional<Room> roomOpt = roomDAO.findByNumber(roomNumber);
-            if (roomOpt.isEmpty()) {
-                throw new EntityNotFoundException("Номер " + roomNumber + " не найден");
-            }
-            
-            Room room = roomOpt.get();
-            if (room.getStatus() != RoomStatus.AVAILABLE) {
-                throw new BusinessLogicException("Номер " + roomNumber + " недоступен для заселения");
-            }
-            if (checkInDate.isAfter(checkOutDate)) {
-                throw new BusinessLogicException("Дата заезда не может быть после даты выезда");
-            }
-            
-            List<Booking> existingBookings = bookingDAO.findByRoomId(room.getId());
-            for (Booking existing : existingBookings) {
-                if (existing.isActive() && datesOverlap(existing.getCheckInDate(), 
-                        existing.getCheckOutDate(), checkInDate, checkOutDate)) {
-                    throw new BusinessLogicException("Номер уже забронирован на эти даты");
-                }
-            }
-        
-            Optional<Guest> existingGuest = guestDAO.findByPassportNumber(guest.getPassportNumber());
-            Guest savedGuest;
-            
-            if (existingGuest.isPresent()) {
-                savedGuest = existingGuest.get();
-                if (!savedGuest.getName().equals(guest.getName())) {
-                    savedGuest.setName(guest.getName());
-                    guestDAO.update(savedGuest);
-                }
-            } else {
-                savedGuest = guestDAO.save(guest);
-            }
-            
-            Booking booking = new Booking();
-            booking.setGuest(savedGuest);
-            booking.setRoom(room);
-            booking.setCheckInDate(checkInDate);
-            booking.setCheckOutDate(checkOutDate);
-            booking.setActive(true);
-            
-            Booking savedBooking = bookingDAO.save(booking);
-            
-            room.setStatus(RoomStatus.OCCUPIED);
-            roomDAO.update(room);
-            
-            return "Успех: " + savedGuest.getName() + " заселен в номер " + roomNumber + 
-                   " (бронирование ID: " + savedBooking.getId() + ")";
-        } catch (DAOException e) {
-            throw new BusinessLogicException("Ошибка базы данных: " + e.getMessage());
+        Optional<Room> roomOpt = roomDAO.findByNumber(roomNumber);
+        if (roomOpt.isEmpty()) {
+            TransactionManager.rollback();
+            throw new EntityNotFoundException("Номер " + roomNumber + " не найден");
         }
+        
+        Room room = roomOpt.get();
+        if (room.getStatus() != RoomStatus.AVAILABLE) {
+            TransactionManager.rollback();
+            throw new BusinessLogicException("Номер " + roomNumber + " недоступен для заселения");
+        }
+        
+        if (checkInDate.isAfter(checkOutDate)) {
+            TransactionManager.rollback();
+            throw new BusinessLogicException("Дата заезда не может быть после даты выезда");
+        }
+        
+        List<Booking> existingBookings = bookingDAO.findByRoomId(room.getId());
+        for (Booking existing : existingBookings) {
+            if (existing.isActive() && datesOverlap(existing.getCheckInDate(), 
+                    existing.getCheckOutDate(), checkInDate, checkOutDate)) {
+                TransactionManager.rollback();
+                throw new BusinessLogicException("Номер уже забронирован на эти даты");
+            }
+        }
+        
+        Optional<Guest> existingGuest = guestDAO.findByPassportNumber(guest.getPassportNumber());
+        Guest savedGuest;
+        
+        if (existingGuest.isPresent()) {
+            savedGuest = existingGuest.get();
+            if (!savedGuest.getName().equals(guest.getName())) {
+                savedGuest.setName(guest.getName());
+                guestDAO.update(savedGuest);
+            }
+        } else {
+            savedGuest = guestDAO.save(guest);
+        }
+        
+        Booking booking = new Booking();
+        booking.setGuest(savedGuest);
+        booking.setRoom(room);
+        booking.setCheckInDate(checkInDate);
+        booking.setCheckOutDate(checkOutDate);
+        booking.setActive(true);
+        
+        Booking savedBooking = bookingDAO.save(booking);
+        
+        room.setStatus(RoomStatus.OCCUPIED);
+        roomDAO.update(room);
+        
+        TransactionManager.commit();
+        
+        return "Успех: " + savedGuest.getName() + " заселен в номер " + roomNumber + 
+               " (бронирование ID: " + savedBooking.getId() + ")";
+        
+    } catch (SQLException e) {
+        TransactionManager.rollback();
+        throw new BusinessLogicException("Ошибка транзакции: " + e.getMessage());
+    } catch (DAOException e) {
+        TransactionManager.rollback();
+        throw new BusinessLogicException("Ошибка базы данных: " + e.getMessage());
     }
+}
     
     private boolean datesOverlap(LocalDate start1, LocalDate end1, 
                                 LocalDate start2, LocalDate end2) {
@@ -206,13 +244,17 @@ public class HotelAdmin {
             throws EntityNotFoundException, BusinessLogicException {
         
         try {
+            TransactionManager.beginTransaction(databaseConfig);
+            
             Optional<Room> roomOpt = roomDAO.findByNumber(roomNumber);
             if (roomOpt.isEmpty()) {
+                TransactionManager.rollback();
                 throw new EntityNotFoundException("Номер " + roomNumber + " не найден");
             }
             
             Room room = roomOpt.get();
             if (room.getStatus() != RoomStatus.OCCUPIED) {
+                TransactionManager.rollback();
                 throw new BusinessLogicException("Номер " + roomNumber + " не занят");
             }
 
@@ -227,6 +269,7 @@ public class HotelAdmin {
             }
             
             if (activeBooking == null) {
+                TransactionManager.rollback();
                 throw new BusinessLogicException("В номере " + roomNumber + " нет активного бронирования");
             }
             
@@ -236,10 +279,16 @@ public class HotelAdmin {
             room.setStatus(RoomStatus.AVAILABLE);
             roomDAO.update(room);
             
+            TransactionManager.commit();
+            
             return "Успех: " + activeBooking.getGuest().getName() + 
                    " выселен из номера " + roomNumber;
+        } catch (SQLException e) {
+        TransactionManager.rollback();
+        throw new BusinessLogicException("Ошибка транзакции: " + e.getMessage());
         } catch (DAOException e) {
-            throw new BusinessLogicException("Ошибка базы данных: " + e.getMessage());
+        TransactionManager.rollback();
+        throw new BusinessLogicException("Ошибка базы данных: " + e.getMessage());
         }
     }
     
@@ -247,13 +296,15 @@ public class HotelAdmin {
                                      LocalDate serviceDate) 
             throws EntityNotFoundException, BusinessLogicException {
         try {
+            TransactionManager.beginTransaction(databaseConfig);
+            
             Optional<Room> roomOpt = roomDAO.findByNumber(roomNumber);
             if (roomOpt.isEmpty()) {
+                TransactionManager.rollback();
                 throw new EntityNotFoundException("Номер " + roomNumber + " не найден");
             }
             
             Room room = roomOpt.get();
-            
             List<Booking> bookings = bookingDAO.findByRoomId(room.getId());
             Booking activeBooking = null;
             
@@ -265,20 +316,22 @@ public class HotelAdmin {
             }
             
             if (activeBooking == null) {
+                TransactionManager.rollback();
                 throw new BusinessLogicException("В номере нет активного бронирования");
             }
             
             Optional<Service> serviceOpt = serviceDAO.findByName(serviceName);
             if (serviceOpt.isEmpty()) {
+                TransactionManager.rollback();
                 throw new EntityNotFoundException("Услуга '" + serviceName + "' не найдена");
             }
             
             Service service = serviceOpt.get();
-            
             LocalDate checkIn = activeBooking.getCheckInDate();
             LocalDate checkOut = activeBooking.getCheckOutDate();
             
             if (serviceDate.isBefore(checkIn) || serviceDate.isAfter(checkOut)) {
+                TransactionManager.rollback();
                 throw new BusinessLogicException("Дата услуги должна быть в периоде проживания: " + 
                                                checkIn + " - " + checkOut);
             }
@@ -290,26 +343,40 @@ public class HotelAdmin {
             
             bookingServiceDAO.save(bookingService);
             
-            return "Успех: Услуга '" + serviceName + "' добавлена к бронированию на " + serviceDate +
-                   " (ID услуги: " + service.getId() + ")";
+            TransactionManager.commit();
+            
+            return "Успех: Услуга '" + serviceName + "' добавлена к бронированию на " + serviceDate;
+        } catch (SQLException e) {
+        TransactionManager.rollback();
+        throw new BusinessLogicException("Ошибка транзакции: " + e.getMessage());
         } catch (DAOException e) {
-            throw new BusinessLogicException("Ошибка базы данных: " + e.getMessage());
-        }
+        TransactionManager.rollback();
+        throw new BusinessLogicException("Ошибка базы данных: " + e.getMessage());
+    }
     }
     
     public String removeServiceFromBooking(Long bookingServiceId) 
             throws EntityNotFoundException, BusinessLogicException {
         try {
+            TransactionManager.beginTransaction(databaseConfig);
+            
             Optional<BookingService> bookingServiceOpt = bookingServiceDAO.findById(bookingServiceId);
             if (bookingServiceOpt.isEmpty()) {
+                TransactionManager.rollback();
                 throw new EntityNotFoundException("Связь услуги с бронированием не найдена: ID=" + bookingServiceId);
             }
             
             bookingServiceDAO.delete(bookingServiceId);
+            
+            TransactionManager.commit();
             return "Успех: Услуга удалена из бронирования";
+        } catch (SQLException e) {
+        TransactionManager.rollback();
+        throw new BusinessLogicException("Ошибка транзакции: " + e.getMessage());
         } catch (DAOException e) {
-            throw new BusinessLogicException("Ошибка базы данных: " + e.getMessage());
-        }
+        TransactionManager.rollback();
+        throw new BusinessLogicException("Ошибка базы данных: " + e.getMessage());
+    }
     }
     
     public List<BookingService> getBookingServices(Long bookingId) throws BusinessLogicException {
@@ -323,81 +390,115 @@ public class HotelAdmin {
     public String setRoomUnderMaintenance(String roomNumber) 
             throws EntityNotFoundException, BusinessLogicException {
         try {
+            TransactionManager.beginTransaction(databaseConfig);
+            
             Optional<Room> roomOpt = roomDAO.findByNumber(roomNumber);
             if (roomOpt.isEmpty()) {
+                TransactionManager.rollback();
                 throw new EntityNotFoundException("Номер " + roomNumber + " не найден");
             }
             
             if (!config.isAllowRoomStatusChange()) {
+                TransactionManager.rollback();
                 throw new BusinessLogicException("Изменение статуса номеров запрещено в настройках");
             }
             
             Room room = roomOpt.get();
             
             if (room.getStatus() == RoomStatus.OCCUPIED) {
+                TransactionManager.rollback();
                 throw new BusinessLogicException("Нельзя перевести занятый номер на ремонт");
             }
             
             room.setStatus(RoomStatus.UNDER_MAINTENANCE);
             roomDAO.update(room);
             
+            TransactionManager.commit();
+            
             return "Успех: Номер " + roomNumber + " переведен на ремонт";
+        } catch (SQLException e) {
+        TransactionManager.rollback();
+        throw new BusinessLogicException("Ошибка транзакции: " + e.getMessage());
         } catch (DAOException e) {
-            throw new BusinessLogicException("Ошибка базы данных: " + e.getMessage());
-        }
+        TransactionManager.rollback();
+        throw new BusinessLogicException("Ошибка базы данных: " + e.getMessage());
+    }
     }
     
     public String setRoomAvailable(String roomNumber) 
             throws EntityNotFoundException, BusinessLogicException {
         try {
+            TransactionManager.beginTransaction(databaseConfig);
+            
             Optional<Room> roomOpt = roomDAO.findByNumber(roomNumber);
             if (roomOpt.isEmpty()) {
+                TransactionManager.rollback();
                 throw new EntityNotFoundException("Номер " + roomNumber + " не найден");
             }
             
             if (!config.isAllowRoomStatusChange()) {
+                TransactionManager.rollback();
                 throw new BusinessLogicException("Изменение статуса номеров запрещено в настройках");
             }
             
             Room room = roomOpt.get();
             
             if (room.getStatus() == RoomStatus.OCCUPIED) {
+                TransactionManager.rollback();
                 throw new BusinessLogicException("Номер занят. Сначала выселите гостя");
             }
             
             room.setStatus(RoomStatus.AVAILABLE);
             roomDAO.update(room);
             
+            TransactionManager.commit();
+            
             return "Успех: Номер " + roomNumber + " доступен для бронирования";
+        } catch (SQLException e) {
+        TransactionManager.rollback();
+        throw new BusinessLogicException("Ошибка транзакции: " + e.getMessage());
         } catch (DAOException e) {
-            throw new BusinessLogicException("Ошибка базы данных: " + e.getMessage());
-        }
+        TransactionManager.rollback();
+        throw new BusinessLogicException("Ошибка базы данных: " + e.getMessage());
+    }
     }
     
     public String changeRoomPrice(String roomNumber, double newPrice) 
             throws EntityNotFoundException, BusinessLogicException {
         
         try {
+            TransactionManager.beginTransaction(databaseConfig);
+            
             Optional<Room> roomOpt = roomDAO.findByNumber(roomNumber);
             if (roomOpt.isEmpty()) {
+                TransactionManager.rollback();
                 throw new EntityNotFoundException("Номер " + roomNumber + " не найден");
-                }
+            }
             
             Room room = roomOpt.get();
             room.setPrice(newPrice);
             roomDAO.update(room);
             
-            return "Успех: Цена номера " + roomNumber + " изменена на " + newPrice + " руб."; 
+            TransactionManager.commit();
+            
+            return "Успех: Цена номера " + roomNumber + " изменена на " + newPrice + " руб.";
+        } catch (SQLException e) {
+        TransactionManager.rollback();
+        throw new BusinessLogicException("Ошибка транзакции: " + e.getMessage());
         } catch (DAOException e) {
-            throw new BusinessLogicException("Ошибка базы данных: " + e.getMessage());
-        }
+        TransactionManager.rollback();
+        throw new BusinessLogicException("Ошибка базы данных: " + e.getMessage());
+    }
     }
     
     public String changeServicePrice(String serviceName, double newPrice) 
             throws BusinessLogicException, EntityNotFoundException {
         try {
+            TransactionManager.beginTransaction(databaseConfig);
+            
             Optional<Service> serviceOpt = serviceDAO.findByName(serviceName);
             if (serviceOpt.isEmpty()) {
+                TransactionManager.rollback();
                 throw new EntityNotFoundException("Услуга '" + serviceName + "' не найдена");
             }
             
@@ -405,17 +506,26 @@ public class HotelAdmin {
             service.setPrice(newPrice);
             serviceDAO.update(service);
             
+            TransactionManager.commit();
+            
             return "Успех: Цена услуги '" + serviceName + "' изменена на " + newPrice + " руб.";
+        } catch (SQLException e) {
+        TransactionManager.rollback();
+        throw new BusinessLogicException("Ошибка транзакции: " + e.getMessage());
         } catch (DAOException e) {
-            throw new BusinessLogicException("Ошибка базы данных: " + e.getMessage());
-        }
+        TransactionManager.rollback();
+        throw new BusinessLogicException("Ошибка базы данных: " + e.getMessage());
+    }
     }
     
     public String addRoom(String number, RoomType type, double price, 
                          int capacity, int stars) throws BusinessLogicException {
         try {
+            TransactionManager.beginTransaction(databaseConfig);
+            
             Optional<Room> existingRoom = roomDAO.findByNumber(number);
             if (existingRoom.isPresent()) {
+                TransactionManager.rollback();
                 throw new BusinessLogicException("Номер " + number + " уже существует");
             }
             
@@ -428,17 +538,26 @@ public class HotelAdmin {
             room.setStatus(RoomStatus.AVAILABLE);
             
             roomDAO.save(room);
+            
+            TransactionManager.commit();
             return "Успех: Добавлен номер " + number;
+        } catch (SQLException e) {
+        TransactionManager.rollback();
+        throw new BusinessLogicException("Ошибка транзакции: " + e.getMessage());
         } catch (DAOException e) {
-            throw new BusinessLogicException("Ошибка базы данных: " + e.getMessage());
-        }
+        TransactionManager.rollback();
+        throw new BusinessLogicException("Ошибка базы данных: " + e.getMessage());
+    }
     }
     
     public String addService(String name, double price, ServiceCategory category) 
             throws BusinessLogicException {
         try {
+            TransactionManager.beginTransaction(databaseConfig);
+            
             Optional<Service> existingService = serviceDAO.findByName(name);
             if (existingService.isPresent()) {
+                TransactionManager.rollback();
                 throw new BusinessLogicException("Услуга '" + name + "' уже существует");
             }
             
@@ -448,9 +567,15 @@ public class HotelAdmin {
             service.setCategory(category);
             
             serviceDAO.save(service);
+            
+            TransactionManager.commit();
             return "Успех: Добавлена услуга '" + name + "'";
+        } catch (SQLException e) {
+        TransactionManager.rollback();
+        throw new BusinessLogicException("Ошибка транзакции: " + e.getMessage());
         } catch (DAOException e) {
-            throw new BusinessLogicException("Ошибка базы данных: " + e.getMessage());
-        }
+        TransactionManager.rollback();
+        throw new BusinessLogicException("Ошибка базы данных: " + e.getMessage());
+    }
     }
 }
