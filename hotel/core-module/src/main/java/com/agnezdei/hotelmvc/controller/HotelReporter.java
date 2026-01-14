@@ -22,7 +22,7 @@ public class HotelReporter {
     private BookingRepository bookingDAO;
 
     @Inject
-    private BookingServiceRepository bookingServiceDAO;
+    private GuestServiceRepository guestServiceDAO;
     
     private static class PricedItem {
         String name;
@@ -186,14 +186,7 @@ public class HotelReporter {
             for (Booking booking : bookings) {
                 if (booking.isActive()) {
                     long days = booking.getCheckOutDate().toEpochDay() - booking.getCheckInDate().toEpochDay();
-                    double roomCost = room.getPrice() * days;
-                    
-                    List<BookingService> services = bookingServiceDAO.findByBookingId(booking.getId());
-                    double servicesCost = services.stream()
-                        .mapToDouble(bs -> bs.getService().getPrice())
-                        .sum();
-                    
-                    return roomCost + servicesCost;
+                    return room.getPrice() * days;
                 }
             }
             
@@ -204,83 +197,69 @@ public class HotelReporter {
         }
     }
     
-    public List<ServiceWithDate> getGuestServicesSortedByPrice(String guestName) {
-        List<ServiceWithDate> allServices = new ArrayList<>();
+    public List<GuestService> getGuestServicesSortedByPrice(String guestName) {
+        List<GuestService> guestServices = new ArrayList<>();
         
         try {
             List<Guest> guests = guestDAO.findAll().stream()
-                .filter(g -> g.getName().equals(guestName))
+                .filter(g -> g.getName().equalsIgnoreCase(guestName))
                 .collect(Collectors.toList());
             
             for (Guest guest : guests) {
-                List<Booking> bookings = bookingDAO.findByGuestId(guest.getId());
-                for (Booking booking : bookings) {
-                    List<BookingService> bookingServices = bookingServiceDAO.findByBookingId(booking.getId());
-                    for (BookingService bs : bookingServices) {
-                        allServices.add(new ServiceWithDate(bs.getService(), bs.getServiceDate()));
-                    }
-                }
+                List<GuestService> services = guestServiceDAO.findByGuestId(guest.getId());
+                guestServices.addAll(services);
             }
             
-            Collections.sort(allServices, new Comparator<ServiceWithDate>() {
-                @Override
-                public int compare(ServiceWithDate swd1, ServiceWithDate swd2) {
-                    return Double.compare(swd1.getService().getPrice(), swd2.getService().getPrice());
-                }
-            });
+            Collections.sort(guestServices, Comparator.comparing(
+                gs -> gs.getService().getPrice()
+            ));
             
         } catch (Exception e) {
-            System.err.println("Ошибка при получении услуг гостя: " + e.getMessage());
+            System.err.println("Ошибка при получении услуг гостя по цене: " + e.getMessage());
         }
     
-        return allServices;
+        return guestServices;
     }
     
-    public List<ServiceWithDate> getGuestServicesSortedByDate(String guestName) {
-        List<ServiceWithDate> allServices = new ArrayList<>();
+    public List<GuestService> getGuestServicesSortedByDate(String guestName) {
+        List<GuestService> guestServices = new ArrayList<>();
         
         try {
             List<Guest> guests = guestDAO.findAll().stream()
-                .filter(g -> g.getName().equals(guestName))
+                .filter(g -> g.getName().equalsIgnoreCase(guestName))
                 .collect(Collectors.toList());
             
             for (Guest guest : guests) {
-                List<Booking> bookings = bookingDAO.findByGuestId(guest.getId());
-                for (Booking booking : bookings) {
-                    List<BookingService> bookingServices = bookingServiceDAO.findByBookingId(booking.getId());
-                    for (BookingService bs : bookingServices) {
-                        allServices.add(new ServiceWithDate(bs.getService(), bs.getServiceDate()));
-                    }
-                }
+                List<GuestService> services = guestServiceDAO.findByGuestId(guest.getId());
+                guestServices.addAll(services);
             }
             
-            Collections.sort(allServices, new Comparator<ServiceWithDate>() {
-                @Override
-                public int compare(ServiceWithDate swd1, ServiceWithDate swd2) {
-                    return swd1.getDate().compareTo(swd2.getDate());
-                }
-            });
-
+            Collections.sort(guestServices, Comparator.comparing(GuestService::getServiceDate));
+            
         } catch (Exception e) {
-            System.err.println("Ошибка при получении услуг гостя: " + e.getMessage());
+            System.err.println("Ошибка при получении услуг гостя по дате: " + e.getMessage());
         }
 
-        return allServices;
+        return guestServices;
     }
     
     public void printGuestServicesSortedByPrice(String guestName) {
-        System.out.println("\n=== УСЛУГИ " + guestName + " (по цене) ===");
-        List<ServiceWithDate> services = getGuestServicesSortedByPrice(guestName);
-        for (ServiceWithDate serviceWithDate : services) {
-            System.out.println(serviceWithDate);
+        System.out.println("\n=== УСЛУГИ ГОСТЯ " + guestName + " (по цене) ===");
+        List<GuestService> services = getGuestServicesSortedByPrice(guestName);
+        for (GuestService gs : services) {
+            System.out.println("  - " + gs.getService().getName() + 
+                             ": " + gs.getService().getPrice() + " руб." +
+                             " (дата: " + gs.getServiceDate() + ")");
         }
     }
     
     public void printGuestServicesSortedByDate(String guestName) {
-        System.out.println("\n=== УСЛУГИ " + guestName + " (по дате) ===");
-        List<ServiceWithDate> services = getGuestServicesSortedByDate(guestName);
-        for (ServiceWithDate serviceWithDate : services) {
-            System.out.println(serviceWithDate);
+        System.out.println("\n=== УСЛУГИ ГОСТЯ " + guestName + " (по дате) ===");
+        List<GuestService> services = getGuestServicesSortedByDate(guestName);
+        for (GuestService gs : services) {
+            System.out.println("  - " + gs.getService().getName() + 
+                             ": " + gs.getService().getPrice() + " руб." +
+                             " (дата: " + gs.getServiceDate() + ")");
         }
     }
     
@@ -340,12 +319,13 @@ public class HotelReporter {
                 System.out.println("Даты: " + activeBooking.getCheckInDate() + " - " + 
                                 activeBooking.getCheckOutDate());
                 
-                List<BookingService> services = bookingServiceDAO.findByBookingId(activeBooking.getId());
-                if (!services.isEmpty()) {
-                    System.out.println("Услуги в бронировании:");
-                    for (BookingService bs : services) {
-                        System.out.println("  - " + bs.getService().getName() + 
-                                         " (" + bs.getServiceDate() + ")");
+                List<GuestService> guestServices = guestServiceDAO.findByGuestId(activeBooking.getGuest().getId());
+                if (!guestServices.isEmpty()) {
+                    System.out.println("Услуги гостя:");
+                    for (GuestService gs : guestServices) {
+                        System.out.println("  - " + gs.getService().getName() + 
+                                         " (" + gs.getServiceDate() + "): " + 
+                                         gs.getService().getPrice() + " руб.");
                     }
                 }
             }
@@ -360,38 +340,6 @@ public class HotelReporter {
             }
         } catch (Exception e) {
             System.out.println("Ошибка при получении деталей номера: " + e.getMessage());
-        }
-    }
-    
-    // Новый метод для получения всех услуг бронирования
-    public void printBookingServices(Long bookingId) {
-        try {
-            Optional<Booking> bookingOpt = bookingDAO.findById(bookingId);
-            if (bookingOpt.isEmpty()) {
-                System.out.println("Бронирование не найдено");
-                return;
-            }
-            
-            Booking booking = bookingOpt.get();
-            System.out.println("\n=== УСЛУГИ БРОНИРОВАНИЯ " + bookingId + " ===");
-            System.out.println("Гость: " + booking.getGuest().getName());
-            System.out.println("Номер: " + booking.getRoom().getNumber());
-            
-            List<BookingService> services = bookingServiceDAO.findByBookingId(bookingId);
-            if (services.isEmpty()) {
-                System.out.println("Услуги не найдены");
-            } else {
-                double total = 0;
-                for (BookingService bs : services) {
-                    System.out.println("  - " + bs.getService().getName() + 
-                                     ", цена: " + bs.getService().getPrice() + " руб." +
-                                     ", дата: " + bs.getServiceDate());
-                    total += bs.getService().getPrice();
-                }
-                System.out.println("Общая стоимость услуг: " + total + " руб.");
-            }
-        } catch (Exception e) {
-            System.out.println("Ошибка при получении услуг бронирования: " + e.getMessage());
         }
     }
 

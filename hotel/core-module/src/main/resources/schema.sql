@@ -44,15 +44,17 @@ CREATE TABLE IF NOT EXISTS booking (
     CHECK (check_out_date > check_in_date)
 );
 
--- 5. Связующая таблица: услуги в бронировании
-CREATE TABLE IF NOT EXISTS booking_service (
+-- 5. Таблица guest_service
+CREATE TABLE IF NOT EXISTS guest_service (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    booking_id INTEGER NOT NULL,
+    guest_id INTEGER NOT NULL,
     service_id INTEGER NOT NULL,
     service_date TEXT NOT NULL,
-    FOREIGN KEY (booking_id) REFERENCES booking(id) ON DELETE CASCADE,
+    
+    FOREIGN KEY (guest_id) REFERENCES guest(id) ON DELETE CASCADE,
     FOREIGN KEY (service_id) REFERENCES service(id) ON DELETE RESTRICT,
-    UNIQUE(booking_id, service_id, service_date)
+    
+    UNIQUE(guest_id, service_id, service_date)
 );
 
 -- Индексы
@@ -63,3 +65,6 @@ CREATE INDEX IF NOT EXISTS idx_booking_dates ON booking(check_in_date, check_out
 CREATE INDEX IF NOT EXISTS idx_booking_guest ON booking(guest_id);
 CREATE INDEX IF NOT EXISTS idx_booking_room ON booking(room_id);
 CREATE INDEX IF NOT EXISTS idx_booking_active ON booking(is_active);
+CREATE INDEX IF NOT EXISTS idx_guest_service_guest ON guest_service(guest_id);
+CREATE INDEX IF NOT EXISTS idx_guest_service_service ON guest_service(service_id);
+CREATE INDEX IF NOT EXISTS idx_guest_service_date ON guest_service(service_date);

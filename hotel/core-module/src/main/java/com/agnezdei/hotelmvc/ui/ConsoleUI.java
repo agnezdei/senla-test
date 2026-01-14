@@ -146,8 +146,8 @@ public class ConsoleUI {
                     case SHOW_ROOM_DETAILS:
                         showRoomDetails();
                         break;
-                    case ADD_SERVICE_TO_BOOKING:
-                        addServiceToBooking();
+                    case ADD_SERVICE_TO_GUEST:
+                        addServiceToGuest();
                         break;
                     case EXPORT_ROOMS:
                         exportRooms();
@@ -161,6 +161,9 @@ public class ConsoleUI {
                     case EXPORT_BOOKINGS:
                         exportBookings();
                         break;
+                    case EXPORT_GUEST_SERVICES:
+                        exportGuestServices();
+                        break;
                     case IMPORT_ROOMS:
                         importRooms();
                         break;
@@ -172,6 +175,9 @@ public class ConsoleUI {
                         break;
                     case IMPORT_BOOKINGS:
                         importBookings();
+                        break;
+                    case IMPORT_GUESTS_SERVICES:
+                        importGuestServices();
                         break;
                 }
             } catch (Exception e) {
@@ -350,10 +356,10 @@ public class ConsoleUI {
         }
     }
 
-    private void addServiceToBooking() {
+    private void addServiceToGuest() {
         try {
-            System.out.print("Введите номер комнаты: ");
-            String roomNumber = scanner.nextLine();
+            System.out.print("Введите номер паспорта: ");
+            String passportNumber = scanner.nextLine();
             
             System.out.print("Введите название услуги: ");
             String serviceName = scanner.nextLine();
@@ -362,7 +368,7 @@ public class ConsoleUI {
             String dateInput = scanner.nextLine();
             LocalDate serviceDate = LocalDate.parse(dateInput, dateFormatter);
             
-            String result = admin.addServiceToBooking(roomNumber, serviceName, serviceDate);
+            String result = admin.addServiceToGuest(passportNumber, serviceName, serviceDate);
             System.out.println(result);
         } catch (EntityNotFoundException e) {
             System.out.println("Ошибка: " + e.getMessage());
@@ -372,9 +378,7 @@ public class ConsoleUI {
             System.out.println("Ошибка формата даты. Используйте гггг-мм-дд");
         }
     }
-    
-    // Методы вывода теперь используют новые методы HotelReporter
-    
+
     private void showAllRoomsByPrice() {
         reporter.printAllRoomsSortedByPrice();
     }
@@ -502,6 +506,13 @@ public class ConsoleUI {
         System.out.println(result);
     }
 
+    private void exportGuestServices() {
+        System.out.print("Введите путь для сохранения файла (например: data/guest_services.csv): ");
+        String filePath = scanner.nextLine();
+        String result = admin.exportGuestServicesToCsv(filePath);
+        System.out.println(result);
+    }
+
     private void importRooms() {
         System.out.print("Введите путь к файлу для импорта комнат (например: data/rooms.csv): ");
         String filePath = scanner.nextLine();
@@ -527,6 +538,13 @@ public class ConsoleUI {
         System.out.print("Введите путь к файлу для импорта бронирований (например: data/bookings.csv): ");
         String filePath = scanner.nextLine();
         String result = admin.importBookingsFromCsv(filePath);
+        System.out.println(result);
+    }
+
+    private void importGuestServices() {
+        System.out.print("Введите путь к файлу для импорта услуг гостей (например: data/guest_services.csv): ");
+        String filePath = scanner.nextLine();
+        String result = admin.importGuestServicesFromCsv(filePath);
         System.out.println(result);
     }
 

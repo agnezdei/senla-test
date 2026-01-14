@@ -8,10 +8,12 @@ import com.agnezdei.hotelmvc.annotations.Inject;
 import com.agnezdei.hotelmvc.exceptions.DAOException;
 import com.agnezdei.hotelmvc.model.Booking;
 import com.agnezdei.hotelmvc.model.Guest;
+import com.agnezdei.hotelmvc.model.GuestService;
 import com.agnezdei.hotelmvc.model.Room;
 import com.agnezdei.hotelmvc.model.Service;
 import com.agnezdei.hotelmvc.repository.impl.BookingRepository;
 import com.agnezdei.hotelmvc.repository.impl.GuestRepository;
+import com.agnezdei.hotelmvc.repository.impl.GuestServiceRepository;
 import com.agnezdei.hotelmvc.repository.impl.RoomRepository;
 import com.agnezdei.hotelmvc.repository.impl.ServiceRepository;
 
@@ -27,6 +29,9 @@ public class CsvExporter {
     
     @Inject
     private BookingRepository bookingDAO;
+
+    @Inject
+    private GuestServiceRepository guestServiceDAO;
     
     public CsvExporter() {
     }
@@ -120,6 +125,27 @@ public class CsvExporter {
             }
         } catch (DAOException e) {
                 throw new IOException("Ошибка при получении бронирований из базы данных: " + e.getMessage(), e);
+            }
+    }
+
+    public void exportGuestServices(List<GuestService> guestServices, String filePath) throws IOException {
+        try {
+            if (guestServices == null) {
+                guestServices = guestServiceDAO.findAll();
+            }
+            
+            try (FileWriter writer = new FileWriter(filePath)) {
+                writer.write("Гость,Услуга\n");
+                
+                for (GuestService guestService : guestServices) {
+                    writer.write(String.format("%s,%s\n",
+                        guestService.getGuest(),
+                        guestService.getService()
+                    ));
+                }
+            }
+        } catch (DAOException e) {
+                throw new IOException("Ошибка при получении услуг гостей из базы данных: " + e.getMessage(), e);
             }
     }
 }

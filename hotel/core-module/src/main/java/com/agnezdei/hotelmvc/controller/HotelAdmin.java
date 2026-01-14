@@ -10,25 +10,25 @@ import com.agnezdei.hotelmvc.annotations.Inject;
 import com.agnezdei.hotelmvc.config.AppConfig;
 import com.agnezdei.hotelmvc.config.DatabaseConfig;
 import com.agnezdei.hotelmvc.csv.BookingCsvImporter;
-import com.agnezdei.hotelmvc.csv.BookingServiceCsvImporter;
 import com.agnezdei.hotelmvc.csv.CsvExporter;
 import com.agnezdei.hotelmvc.csv.GuestCsvImporter;
+import com.agnezdei.hotelmvc.csv.GuestServiceCsvImporter;
 import com.agnezdei.hotelmvc.csv.RoomCsvImporter;
 import com.agnezdei.hotelmvc.csv.ServiceCsvImporter;
 import com.agnezdei.hotelmvc.exceptions.BusinessLogicException;
 import com.agnezdei.hotelmvc.exceptions.DAOException;
 import com.agnezdei.hotelmvc.exceptions.EntityNotFoundException;
 import com.agnezdei.hotelmvc.model.Booking;
-import com.agnezdei.hotelmvc.model.BookingService;
 import com.agnezdei.hotelmvc.model.Guest;
+import com.agnezdei.hotelmvc.model.GuestService;
 import com.agnezdei.hotelmvc.model.Room;
 import com.agnezdei.hotelmvc.model.RoomStatus;
 import com.agnezdei.hotelmvc.model.RoomType;
 import com.agnezdei.hotelmvc.model.Service;
 import com.agnezdei.hotelmvc.model.ServiceCategory;
 import com.agnezdei.hotelmvc.repository.impl.BookingRepository;
-import com.agnezdei.hotelmvc.repository.impl.BookingServiceRepository;
 import com.agnezdei.hotelmvc.repository.impl.GuestRepository;
+import com.agnezdei.hotelmvc.repository.impl.GuestServiceRepository;
 import com.agnezdei.hotelmvc.repository.impl.RoomRepository;
 import com.agnezdei.hotelmvc.repository.impl.ServiceRepository;
 import com.agnezdei.hotelmvc.util.TransactionManager;
@@ -47,7 +47,7 @@ public class HotelAdmin {
     private BookingRepository bookingDAO;
      
     @Inject
-    private BookingServiceRepository bookingServiceDAO;
+    private GuestServiceRepository guestServiceDAO;
 
     @Inject
     private AppConfig config;
@@ -68,7 +68,7 @@ public class HotelAdmin {
     private BookingCsvImporter bookingImporter;
 
     @Inject
-    private BookingServiceCsvImporter bookingServiceImporter;
+    private GuestServiceCsvImporter guestServiceImporter;
 
     @Inject
     private DatabaseConfig databaseConfig;
@@ -124,6 +124,18 @@ public class HotelAdmin {
         }
     }
 
+    public String exportGuestServicesToCsv(String filePath) {
+        try {
+            List<GuestService> guestServices = guestServiceDAO.findAll();
+            csvExporter.exportGuestServices(guestServices, filePath);
+            return "Успех: Гости экспортированы в " + filePath;
+        } catch (DAOException e) {
+            return "Ошибка БД при экспорте услуг гостей: " + e.getMessage();
+        } catch (IOException e) {
+            return "Ошибка файла при экспорте услуг гостей: " + e.getMessage();
+        }
+    }
+
     public String importRoomsFromCsv(String filePath) {
         try {
             return roomImporter.importRooms(filePath);
@@ -156,9 +168,9 @@ public class HotelAdmin {
         }
     }
     
-    public String importBookingServicesFromCsv(String filePath) {
+    public String importGuestServicesFromCsv(String filePath) {
         try {
-            return bookingServiceImporter.importBookingServices(filePath);
+            return guestServiceImporter.importGuestServices(filePath);
         } catch (Exception e) {
             return "Ошибка импорта: " + e.getMessage();
         }
@@ -292,61 +304,61 @@ public class HotelAdmin {
         }
     }
     
-    public String addServiceToBooking(String roomNumber, String serviceName, 
-                                     LocalDate serviceDate) 
-            throws EntityNotFoundException, BusinessLogicException {
-        try {
-            TransactionManager.beginTransaction(databaseConfig);
-            
-            Optional<Room> roomOpt = roomDAO.findByNumber(roomNumber);
-            if (roomOpt.isEmpty()) {
-                TransactionManager.rollback();
-                throw new EntityNotFoundException("Номер " + roomNumber + " не найден");
-            }
-            
-            Room room = roomOpt.get();
-            List<Booking> bookings = bookingDAO.findByRoomId(room.getId());
-            Booking activeBooking = null;
-            
-            for (Booking booking : bookings) {
-                if (booking.isActive()) {
-                    activeBooking = booking;
-                    break;
-                }
-            }
-            
-            if (activeBooking == null) {
-                TransactionManager.rollback();
-                throw new BusinessLogicException("В номере нет активного бронирования");
-            }
-            
-            Optional<Service> serviceOpt = serviceDAO.findByName(serviceName);
-            if (serviceOpt.isEmpty()) {
-                TransactionManager.rollback();
-                throw new EntityNotFoundException("Услуга '" + serviceName + "' не найдена");
-            }
-            
-            Service service = serviceOpt.get();
-            LocalDate checkIn = activeBooking.getCheckInDate();
-            LocalDate checkOut = activeBooking.getCheckOutDate();
-            
-            if (serviceDate.isBefore(checkIn) || serviceDate.isAfter(checkOut)) {
-                TransactionManager.rollback();
-                throw new BusinessLogicException("Дата услуги должна быть в периоде проживания: " + 
-                                               checkIn + " - " + checkOut);
-            }
-            
-            BookingService bookingService = new BookingService();
-            bookingService.setBooking(activeBooking);
-            bookingService.setService(service);
-            bookingService.setServiceDate(serviceDate);
-            
-            bookingServiceDAO.save(bookingService);
-            
-            TransactionManager.commit();
-            
-            return "Успех: Услуга '" + serviceName + "' добавлена к бронированию на " + serviceDate;
-        } catch (SQLException e) {
+
+    public String addServiceToGuest(String guestPassport, String serviceName, LocalDate serviceDate) 
+        throws EntityNotFoundException, BusinessLogicException {
+    try {
+        TransactionManager.beginTransaction(databaseConfig);
+        
+        Optional<Guest> guestOpt = guestDAO.findByPassportNumber(guestPassport);
+        if (guestOpt.isEmpty()) {
+            TransactionManager.rollback();
+            throw new EntityNotFoundException("Гость с паспортом " + guestPassport + " не найден");
+        }
+        
+        Optional<Service> serviceOpt = serviceDAO.findByName(serviceName);
+        if (serviceOpt.isEmpty()) {
+            TransactionManager.rollback();
+            throw new EntityNotFoundException("Услуга '" + serviceName + "' не найдена");
+        }
+        
+        Guest guest = guestOpt.get();
+        Service service = serviceOpt.get();
+        
+        GuestService guestService = new GuestService();
+        guestService.setGuest(guest);
+        guestService.setService(service);
+        guestService.setServiceDate(serviceDate);
+        
+        guestServiceDAO.save(guestService);
+        
+        TransactionManager.commit();
+        return "Успех: Услуга удалена из заказов гостя";
+    } catch (SQLException e) {
+        TransactionManager.rollback();
+        throw new BusinessLogicException("Ошибка транзакции: " + e.getMessage());
+        } catch (DAOException e) {
+        TransactionManager.rollback();
+        throw new BusinessLogicException("Ошибка базы данных: " + e.getMessage());
+    }
+    }
+
+    public String removeServiceFromGuest(Long guestServiceId) 
+        throws EntityNotFoundException, BusinessLogicException {
+    try {
+        TransactionManager.beginTransaction(databaseConfig);
+        
+        Optional<GuestService> guestServiceOpt = guestServiceDAO.findById(guestServiceId);
+        if (guestServiceOpt.isEmpty()) {
+            TransactionManager.rollback();
+            throw new EntityNotFoundException("Заказ услуги не найден: ID=" + guestServiceId);
+        }
+        
+        guestServiceDAO.delete(guestServiceId);
+        
+        TransactionManager.commit();
+        return "Успех: Услуга удалена из заказов гостя";
+    } catch (SQLException e) {
         TransactionManager.rollback();
         throw new BusinessLogicException("Ошибка транзакции: " + e.getMessage());
         } catch (DAOException e) {
@@ -355,33 +367,9 @@ public class HotelAdmin {
     }
     }
     
-    public String removeServiceFromBooking(Long bookingServiceId) 
-            throws EntityNotFoundException, BusinessLogicException {
+    public List<GuestService> getGuestServices(Long guestId) throws BusinessLogicException {
         try {
-            TransactionManager.beginTransaction(databaseConfig);
-            
-            Optional<BookingService> bookingServiceOpt = bookingServiceDAO.findById(bookingServiceId);
-            if (bookingServiceOpt.isEmpty()) {
-                TransactionManager.rollback();
-                throw new EntityNotFoundException("Связь услуги с бронированием не найдена: ID=" + bookingServiceId);
-            }
-            
-            bookingServiceDAO.delete(bookingServiceId);
-            
-            TransactionManager.commit();
-            return "Успех: Услуга удалена из бронирования";
-        } catch (SQLException e) {
-        TransactionManager.rollback();
-        throw new BusinessLogicException("Ошибка транзакции: " + e.getMessage());
-        } catch (DAOException e) {
-        TransactionManager.rollback();
-        throw new BusinessLogicException("Ошибка базы данных: " + e.getMessage());
-    }
-    }
-    
-    public List<BookingService> getBookingServices(Long bookingId) throws BusinessLogicException {
-        try {
-            return bookingServiceDAO.findByBookingId(bookingId);
+            return guestServiceDAO.findByGuestId(guestId);
         } catch (DAOException e) {
             throw new BusinessLogicException("Ошибка базы данных: " + e.getMessage());
         }

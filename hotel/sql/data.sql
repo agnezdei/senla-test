@@ -30,8 +30,8 @@ INSERT OR IGNORE INTO booking (guest_id, room_id, check_in_date, check_out_date,
     (2, 3, '2025-12-10', '2025-12-15', FALSE),
     (3, 2, '2025-12-25', '2026-05-01', TRUE);
 
--- Связи бронирований и услуг
-INSERT OR IGNORE INTO booking_service (booking_id, service_id, service_date) VALUES
+-- Связи гостей и услуг
+INSERT OR IGNORE INTO guest_service (guest_id, service_id, service_date) VALUES
     (1, 1, '2025-12-16'),
     (1, 1, '2025-12-17'),
     (1, 1, '2025-12-18'),
