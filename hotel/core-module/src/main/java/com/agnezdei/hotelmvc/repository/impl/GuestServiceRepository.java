@@ -28,37 +28,98 @@ public class GuestServiceRepository extends BaseRepository implements GenericDAO
     public GuestService save(GuestService guestService) throws DAOException {
         String sql = "INSERT INTO guest_service (guest_id, service_id, service_date) VALUES (?, ?, ?)";
         
-        Connection conn = null;
-        PreparedStatement stmt = null;
-        ResultSet generatedKeys = null;
-        
-        try {
-            conn = getConnection();
-            stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+        try (Connection conn = getConnection()) {
+            conn.setAutoCommit(false);
             
-            stmt.setLong(1, guestService.getGuest().getId());
-            stmt.setLong(2, guestService.getService().getId());
-            stmt.setString(3, guestService.getServiceDate().toString());
-            
-            int affectedRows = stmt.executeUpdate();
-            
-            if (affectedRows == 0) {
-                throw new DAOException("Создание заказа услуги не удалось");
+            try (PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+                
+                stmt.setLong(1, guestService.getGuest().getId());
+                stmt.setLong(2, guestService.getService().getId());
+                stmt.setString(3, guestService.getServiceDate().toString());
+                
+                int affectedRows = stmt.executeUpdate();
+                
+                if (affectedRows == 0) {
+                    conn.rollback();
+                    throw new DAOException("Создание заказа услуги не удалось");
+                }
+                
+                try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
+                    if (generatedKeys.next()) {
+                        guestService.setId(generatedKeys.getLong(1));
+                    } else {
+                        conn.rollback();
+                        throw new DAOException("Создание заказа не удалось, ID не получен");
+                    }
+                }
+                
+                conn.commit();
+                return guestService;
+                
+            } catch (SQLException e) {
+                conn.rollback();
+                throw new DAOException("Ошибка при сохранении заказа услуги", e);
             }
-            
-            generatedKeys = stmt.getGeneratedKeys();
-            if (generatedKeys.next()) {
-                guestService.setId(generatedKeys.getLong(1));
-            } else {
-                throw new DAOException("Создание заказа не удалось, ID не получен");
-            }
-            
-            return guestService;
-            
         } catch (SQLException e) {
             throw new DAOException("Ошибка при сохранении заказа услуги", e);
-        } finally {
-            closeResources(generatedKeys, stmt);
+        }
+    }
+
+    @Override
+    public void update(GuestService guestService) throws DAOException {
+        String sql = "UPDATE guest_service SET guest_id = ?, service_id = ?, service_date = ? WHERE id = ?";
+        
+        try (Connection conn = getConnection()) {
+            conn.setAutoCommit(false);
+            
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                
+                stmt.setLong(1, guestService.getGuest().getId());
+                stmt.setLong(2, guestService.getService().getId());
+                stmt.setString(3, guestService.getServiceDate().toString());
+                stmt.setLong(4, guestService.getId());
+                
+                int rowsUpdated = stmt.executeUpdate();
+                if (rowsUpdated == 0) {
+                    conn.rollback();
+                    throw new DAOException("Заказ услуги не найден для обновления: ID=" + guestService.getId());
+                }
+                
+                conn.commit();
+                
+            } catch (SQLException e) {
+                conn.rollback();
+                throw new DAOException("Ошибка при обновлении заказа услуги: " + guestService.getId(), e);
+            }
+        } catch (SQLException e) {
+            throw new DAOException("Ошибка при обновлении заказа услуги: " + guestService.getId(), e);
+        }
+    }
+    
+    @Override
+    public void delete(Long id) throws DAOException {
+        String sql = "DELETE FROM guest_service WHERE id = ?";
+        
+        try (Connection conn = getConnection()) {
+            conn.setAutoCommit(false);
+            
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setLong(1, id);
+                
+                int rowsDeleted = stmt.executeUpdate();
+                if (rowsDeleted == 0) {
+                    conn.rollback();
+                    throw new DAOException("Заказ услуги не найден для удаления: ID=" + id);
+                }
+                
+                conn.commit();
+                
+            } catch (SQLException e) {
+                conn.rollback();
+                throw new DAOException("Ошибка при удалении заказа услуги: " + id, e);
+            }
+        } catch (SQLException e) {
+            throw new DAOException("Ошибка при удалении заказа услуги: " + id, e);
         }
     }
     
@@ -69,25 +130,20 @@ public class GuestServiceRepository extends BaseRepository implements GenericDAO
                      "JOIN service s ON gs.service_id = s.id " +
                      "WHERE gs.id = ?";
         
-        Connection conn = null;
-        PreparedStatement stmt = null;
-        ResultSet rs = null;
-        
-        try {
-            conn = getConnection();
-            stmt = conn.prepareStatement(sql);
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
             stmt.setLong(1, id);
             
-            rs = stmt.executeQuery();
-            if (rs.next()) {
-                return Optional.of(mapResultSetToGuestService(rs));
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(mapResultSetToGuestService(rs));
+                }
+                return Optional.empty();
             }
-            return Optional.empty();
             
         } catch (SQLException e) {
             throw new DAOException("Ошибка при поиске заказа услуги по ID: " + id, e);
-        } finally {
-            closeResources(rs, stmt);
         }
     }
     
@@ -99,14 +155,9 @@ public class GuestServiceRepository extends BaseRepository implements GenericDAO
                      "JOIN service s ON gs.service_id = s.id " +
                      "ORDER BY gs.service_date DESC, g.name";
         
-        Connection conn = null;
-        Statement stmt = null;
-        ResultSet rs = null;
-        
-        try {
-            conn = getConnection();
-            stmt = conn.createStatement();
-            rs = stmt.executeQuery(sql);
+        try (Connection conn = getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
             
             while (rs.next()) {
                 guestServices.add(mapResultSetToGuestService(rs));
@@ -114,89 +165,30 @@ public class GuestServiceRepository extends BaseRepository implements GenericDAO
             
         } catch (SQLException e) {
             throw new DAOException("Ошибка при получении всех заказов услуг", e);
-        } finally {
-            closeResources(rs, stmt);
         }
         
         return guestServices;
     }
-    
-    @Override
-    public void update(GuestService guestService) throws DAOException {
-        String sql = "UPDATE guest_service SET guest_id = ?, service_id = ?, service_date = ? WHERE id = ?";
-        
-        Connection conn = null;
-        PreparedStatement stmt = null;
-        
-        try {
-            conn = getConnection();
-            stmt = conn.prepareStatement(sql);
-            
-            stmt.setLong(1, guestService.getGuest().getId());
-            stmt.setLong(2, guestService.getService().getId());
-            stmt.setString(3, guestService.getServiceDate().toString());
-            stmt.setLong(4, guestService.getId());
-            
-            int rowsUpdated = stmt.executeUpdate();
-            if (rowsUpdated == 0) {
-                throw new DAOException("Заказ услуги не найден для обновления: ID=" + guestService.getId());
-            }
-            
-        } catch (SQLException e) {
-            throw new DAOException("Ошибка при обновлении заказа услуги: " + guestService.getId(), e);
-        } finally {
-            closeResources(null, stmt);
-        }
-    }
-    
-    @Override
-    public void delete(Long id) throws DAOException {
-        String sql = "DELETE FROM guest_service WHERE id = ?";
-        
-        Connection conn = null;
-        PreparedStatement stmt = null;
-        
-        try {
-            conn = getConnection();
-            stmt = conn.prepareStatement(sql);
-            stmt.setLong(1, id);
-            
-            int rowsDeleted = stmt.executeUpdate();
-            if (rowsDeleted == 0) {
-                throw new DAOException("Заказ услуги не найден для удаления: ID=" + id);
-            }
-            
-        } catch (SQLException e) {
-            throw new DAOException("Ошибка при удалении заказа услуги: " + id, e);
-        } finally {
-            closeResources(null, stmt);
-        }
-    }
-    
-    public List<GuestService> findByGuestId(Long guestId) throws DAOException {
+
+     public List<GuestService> findByGuestId(Long guestId) throws DAOException {
         List<GuestService> guestServices = new ArrayList<>();
         String sql = "SELECT gs.*, s.* FROM guest_service gs " +
                      "JOIN service s ON gs.service_id = s.id " +
                      "WHERE gs.guest_id = ? ORDER BY gs.service_date";
         
-        Connection conn = null;
-        PreparedStatement stmt = null;
-        ResultSet rs = null;
-        
-        try {
-            conn = getConnection();
-            stmt = conn.prepareStatement(sql);
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
             stmt.setLong(1, guestId);
             
-            rs = stmt.executeQuery();
-            while (rs.next()) {
-                guestServices.add(mapSimpleResultSetToGuestService(rs, guestId));
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    guestServices.add(mapResultSetToGuestService(rs));
+                }
             }
             
         } catch (SQLException e) {
             throw new DAOException("Ошибка при поиске заказов услуг гостя: " + guestId, e);
-        } finally {
-            closeResources(rs, stmt);
         }
         
         return guestServices;
@@ -208,137 +200,142 @@ public class GuestServiceRepository extends BaseRepository implements GenericDAO
                      "JOIN guest g ON gs.guest_id = g.id " +
                      "WHERE gs.service_id = ? ORDER BY gs.service_date";
         
-        Connection conn = null;
-        PreparedStatement stmt = null;
-        ResultSet rs = null;
-        
-        try {
-            conn = getConnection();
-            stmt = conn.prepareStatement(sql);
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
             stmt.setLong(1, serviceId);
             
-            rs = stmt.executeQuery();
-            while (rs.next()) {
-                guestServices.add(mapResultSetToGuestService(rs));
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    guestServices.add(mapResultSetToGuestService(rs));
+                }
             }
             
         } catch (SQLException e) {
-            throw new DAOException("Ошибка при поиске заказов для услуги: " + serviceId, e);
-        } finally {
-            closeResources(rs, stmt);
+            throw new DAOException("Ошибка при поиске заказов для услуги : " + serviceId, e);
         }
         
         return guestServices;
     }
+
+    public List<GuestService> findByGuestIdOrderedByPrice(Long guestId) throws DAOException {
+    List<GuestService> guestServices = new ArrayList<>();
+    String sql = "SELECT gs.*, g.*, s.* FROM guest_service gs " +
+                 "JOIN guest g ON gs.guest_id = g.id " +
+                 "JOIN service s ON gs.service_id = s.id " +
+                 "WHERE gs.guest_id = ? ORDER BY s.price";
     
-    public List<GuestService> findByDate(LocalDate date) throws DAOException {
-        List<GuestService> guestServices = new ArrayList<>();
-        String sql = "SELECT gs.*, g.*, s.* FROM guest_service gs " +
-                     "JOIN guest g ON gs.guest_id = g.id " +
-                     "JOIN service s ON gs.service_id = s.id " +
-                     "WHERE gs.service_date = ? ORDER BY g.name";
+    try (Connection conn = getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
         
-        Connection conn = null;
-        PreparedStatement stmt = null;
-        ResultSet rs = null;
+        stmt.setLong(1, guestId);
         
-        try {
-            conn = getConnection();
-            stmt = conn.prepareStatement(sql);
-            stmt.setString(1, date.toString());
-            
-            rs = stmt.executeQuery();
+        try (ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
                 guestServices.add(mapResultSetToGuestService(rs));
             }
-            
-        } catch (SQLException e) {
-            throw new DAOException("Ошибка при поиске заказов услуг по дате: " + date, e);
-        } finally {
-            closeResources(rs, stmt);
         }
         
-        return guestServices;
+    } catch (SQLException e) {
+        throw new DAOException("Ошибка при поиске услуг гостя, отсортированных по цене: " + guestId, e);
     }
     
-    public List<GuestService> findByGuestIdAndDateRange(Long guestId, LocalDate startDate, LocalDate endDate) 
-            throws DAOException {
-        List<GuestService> guestServices = new ArrayList<>();
-        String sql = "SELECT gs.*, s.* FROM guest_service gs " +
-                     "JOIN service s ON gs.service_id = s.id " +
-                     "WHERE gs.guest_id = ? AND gs.service_date BETWEEN ? AND ? " +
-                     "ORDER BY gs.service_date";
+    return guestServices;
+}
+
+public List<GuestService> findByGuestIdOrderedByDate(Long guestId) throws DAOException {
+    List<GuestService> guestServices = new ArrayList<>();
+    String sql = "SELECT gs.*, g.*, s.* FROM guest_service gs " +
+                 "JOIN guest g ON gs.guest_id = g.id " +
+                 "JOIN service s ON gs.service_id = s.id " +
+                 "WHERE gs.guest_id = ? ORDER BY gs.service_date";
+    
+    try (Connection conn = getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
         
-        Connection conn = null;
-        PreparedStatement stmt = null;
-        ResultSet rs = null;
+        stmt.setLong(1, guestId);
         
-        try {
-            conn = getConnection();
-            stmt = conn.prepareStatement(sql);
-            stmt.setLong(1, guestId);
-            stmt.setString(2, startDate.toString());
-            stmt.setString(3, endDate.toString());
-            
-            rs = stmt.executeQuery();
+        try (ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
-                guestServices.add(mapSimpleResultSetToGuestService(rs, guestId));
+                guestServices.add(mapResultSetToGuestService(rs));
             }
-            
-        } catch (SQLException e) {
-            throw new DAOException("Ошибка при поиске заказов услуг гостя за период", e);
-        } finally {
-            closeResources(rs, stmt);
         }
         
-        return guestServices;
+    } catch (SQLException e) {
+        throw new DAOException("Ошибка при поиске услуг гостя, отсортированных по дате: " + guestId, e);
+    }
+    
+    return guestServices;
+}
+
+public List<GuestService> findByGuestNameOrderedByPrice(String guestName) throws DAOException {
+    List<GuestService> guestServices = new ArrayList<>();
+    String sql = "SELECT gs.*, g.*, s.* FROM guest_service gs " +
+                 "JOIN guest g ON gs.guest_id = g.id " +
+                 "JOIN service s ON gs.service_id = s.id " +
+                 "WHERE g.name LIKE ? ORDER BY s.price";
+    
+    try (Connection conn = getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+        
+        stmt.setString(1, "%" + guestName + "%");
+        
+        try (ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                guestServices.add(mapResultSetToGuestService(rs));
+            }
+        }
+        
+    } catch (SQLException e) {
+        throw new DAOException("Ошибка при поиске услуг гостя по имени, отсортированных по цене: " + guestName, e);
+    }
+    
+    return guestServices;
+}
+
+public List<GuestService> findByGuestNameOrderedByDate(String guestName) throws DAOException {
+    List<GuestService> guestServices = new ArrayList<>();
+    String sql = "SELECT gs.*, g.*, s.* FROM guest_service gs " +
+                 "JOIN guest g ON gs.guest_id = g.id " +
+                 "JOIN service s ON gs.service_id = s.id " +
+                 "WHERE g.name LIKE ? ORDER BY gs.service_date";
+    
+    try (Connection conn = getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+        
+        stmt.setString(1, "%" + guestName + "%");
+        
+        try (ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                guestServices.add(mapResultSetToGuestService(rs));
+            }
+        }
+        
+    } catch (SQLException e) {
+        throw new DAOException("Ошибка при поиске услуг гостя по имени, отсортированных по дате: " + guestName, e);
+    }
+    
+    return guestServices;
     }
     
     private GuestService mapResultSetToGuestService(ResultSet rs) throws SQLException {
         GuestService guestService = new GuestService();
         
-        guestService.setId(rs.getLong("id"));
-        guestService.setServiceDate(LocalDate.parse(rs.getString("service_date")));
+        guestService.setId(rs.getLong("gs.id"));
+        guestService.setServiceDate(LocalDate.parse(rs.getString("gs.service_date")));
         
         Guest guest = new Guest();
-        guest.setId(rs.getLong("guest_id"));
-        guest.setName(rs.getString("name"));
-        guest.setPassportNumber(rs.getString("passport_number"));
+        guest.setId(rs.getLong("g.id"));
+        guest.setName(rs.getString("g.name"));
+        guest.setPassportNumber(rs.getString("g.passport_number"));
         guestService.setGuest(guest);
         
         Service service = new Service();
-        service.setId(rs.getLong("service_id"));
-        service.setName(rs.getString("name"));
-        service.setPrice(rs.getDouble("price"));
+        service.setId(rs.getLong("s.id"));
+        service.setName(rs.getString("s.name"));
+        service.setPrice(rs.getDouble("s.price"));
         
-        String categoryStr = rs.getString("category");
-        try {
-            service.setCategory(ServiceCategory.valueOf(categoryStr));
-        } catch (IllegalArgumentException e) {
-            service.setCategory(ServiceCategory.COMFORT);
-        }
-        
-        guestService.setService(service);
-        
-        return guestService;
-    }
-    
-    private GuestService mapSimpleResultSetToGuestService(ResultSet rs, Long guestId) throws SQLException {
-        GuestService guestService = new GuestService();
-        
-        guestService.setId(rs.getLong("id"));
-        guestService.setServiceDate(LocalDate.parse(rs.getString("service_date")));
-        
-        Guest guest = new Guest();
-        guest.setId(guestId);
-        guestService.setGuest(guest);
-        
-        Service service = new Service();
-        service.setId(rs.getLong("service_id"));
-        service.setName(rs.getString("name"));
-        service.setPrice(rs.getDouble("price"));
-        
-        String categoryStr = rs.getString("category");
+        String categoryStr = rs.getString("s.category");
         try {
             service.setCategory(ServiceCategory.valueOf(categoryStr));
         } catch (IllegalArgumentException e) {

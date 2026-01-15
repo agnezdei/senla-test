@@ -433,11 +433,10 @@ public class ConsoleUI {
     }
     
     private void showPaymentAmount() {
-        System.out.print("Введите номер комнаты: ");
+        System.out.print("Введите номер комнаты для расчета оплаты: ");
         String roomNumber = scanner.nextLine();
         
-        double amount = reporter.getPaymentAmountForRoom(roomNumber);
-        System.out.println("\nСумма к оплате за номер " + roomNumber + ": " + amount + " руб.");
+        reporter.getPaymentForRoom(roomNumber);
     }
     
     private void showLastThreeGuests() {

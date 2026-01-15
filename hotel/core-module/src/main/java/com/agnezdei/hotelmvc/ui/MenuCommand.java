@@ -23,7 +23,7 @@ public enum MenuCommand {
     SHOW_TOTAL_AVAILABLE(17, "Общее число свободных номеров"),
     SHOW_TOTAL_GUESTS(18, "Общее число постояльцев"),
     SHOW_ROOMS_BY_DATE(19, "Номера свободные на дату"),
-    SHOW_PAYMENT_AMOUNT(20, "Сумма оплаты за номер"),
+    SHOW_PAYMENT_AMOUNT(20, "Сумма оплаты для гостя"),
     SHOW_LAST_THREE_GUESTS(21, "3 последних постояльца номера"),
     
     SHOW_GUEST_SERVICES_PRICE(22, "Услуги гостя (по цене)"),

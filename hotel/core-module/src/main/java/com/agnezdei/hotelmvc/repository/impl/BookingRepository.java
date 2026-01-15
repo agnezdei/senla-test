@@ -15,19 +15,14 @@ import com.agnezdei.hotelmvc.exceptions.DAOException;
 import com.agnezdei.hotelmvc.model.Booking;
 import com.agnezdei.hotelmvc.model.Guest;
 import com.agnezdei.hotelmvc.model.Room;
+import com.agnezdei.hotelmvc.model.RoomStatus;
+import com.agnezdei.hotelmvc.model.RoomType;
 import com.agnezdei.hotelmvc.repository.GenericDAO;
 
 public class BookingRepository extends BaseRepository implements GenericDAO<Booking, Long> {
     
-    private final GuestRepository guestRepo;
-    private final RoomRepository roomRepo;
-    
-    public BookingRepository(DatabaseConfig databaseConfig, 
-                            GuestRepository guestRepo, 
-                            RoomRepository roomRepo) {
+    public BookingRepository(DatabaseConfig databaseConfig) {
         super(databaseConfig);
-        this.guestRepo = guestRepo;
-        this.roomRepo = roomRepo;
     }
     
     @Override
@@ -35,81 +30,80 @@ public class BookingRepository extends BaseRepository implements GenericDAO<Book
         String sql = "INSERT INTO booking (guest_id, room_id, check_in_date, check_out_date, is_active) " +
                      "VALUES (?, ?, ?, ?, ?)";
         
-        Connection conn = null;
-        PreparedStatement stmt = null;
-        ResultSet generatedKeys = null;
-        
-        try {
-            conn = getConnection();
-            stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+        try (Connection conn = getConnection()) {
+            conn.setAutoCommit(false);
             
-            stmt.setLong(1, booking.getGuest().getId());
-            stmt.setLong(2, booking.getRoom().getId());
-            stmt.setString(3, booking.getCheckInDate().toString());
-            stmt.setString(4, booking.getCheckOutDate().toString());
-            stmt.setBoolean(5, booking.isActive());
-            
-            int affectedRows = stmt.executeUpdate();
-            
-            if (affectedRows == 0) {
-                throw new DAOException("Создание бронирования не удалось, ни одна запись не добавлена");
+            try (PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+                
+                stmt.setLong(1, booking.getGuest().getId());
+                stmt.setLong(2, booking.getRoom().getId());
+                stmt.setString(3, booking.getCheckInDate().toString());
+                stmt.setString(4, booking.getCheckOutDate().toString());
+                stmt.setBoolean(5, booking.isActive());
+                
+                int affectedRows = stmt.executeUpdate();
+                
+                if (affectedRows == 0) {
+                    conn.rollback();
+                    throw new DAOException("Создание бронирования не удалось, ни одна запись не добавлена");
+                }
+                
+                try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
+                    if (generatedKeys.next()) {
+                        booking.setId(generatedKeys.getLong(1));
+                    } else {
+                        conn.rollback();
+                        throw new DAOException("Создание бронирования не удалось, ID не получен");
+                    }
+                }
+                
+                conn.commit();
+                return booking;
+                
+            } catch (SQLException e) {
+                conn.rollback();
+                throw new DAOException("Ошибка при сохранении бронирования", e);
             }
-            
-            generatedKeys = stmt.getGeneratedKeys();
-            if (generatedKeys.next()) {
-                booking.setId(generatedKeys.getLong(1));
-            } else {
-                throw new DAOException("Создание бронирования не удалось, ID не получен");
-            }
-            
-            return booking;
-            
         } catch (SQLException e) {
             throw new DAOException("Ошибка при сохранении бронирования", e);
-        } finally {
-            closeResources(generatedKeys, stmt);
         }
     }
     
     @Override
     public Optional<Booking> findById(Long id) throws DAOException {
-        String sql = "SELECT * FROM booking WHERE id = ?";
+        String sql = "SELECT b.*, g.*, r.* FROM booking b " +
+                     "JOIN guest g ON b.guest_id = g.id " +
+                     "JOIN room r ON b.room_id = r.id " +
+                     "WHERE b.id = ?";
         
-        Connection conn = null;
-        PreparedStatement stmt = null;
-        ResultSet rs = null;
-        
-        try {
-            conn = getConnection();
-            stmt = conn.prepareStatement(sql);
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
             stmt.setLong(1, id);
             
-            rs = stmt.executeQuery();
-            if (rs.next()) {
-                return Optional.of(mapResultSetToBooking(rs));
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(mapResultSetToBooking(rs));
+                }
+                return Optional.empty();
             }
-            return Optional.empty();
             
         } catch (SQLException e) {
             throw new DAOException("Ошибка при поиске бронирования по ID: " + id, e);
-        } finally {
-            closeResources(rs, stmt);
         }
     }
     
     @Override
     public List<Booking> findAll() throws DAOException {
         List<Booking> bookings = new ArrayList<>();
-        String sql = "SELECT * FROM booking ORDER BY check_in_date DESC";
+        String sql = "SELECT b.*, g.*, r.* FROM booking b " +
+                     "JOIN guest g ON b.guest_id = g.id " +
+                     "JOIN room r ON b.room_id = r.id " +
+                     "ORDER BY b.check_in_date DESC";
         
-        Connection conn = null;
-        Statement stmt = null;
-        ResultSet rs = null;
-        
-        try {
-            conn = getConnection();
-            stmt = conn.createStatement();
-            rs = stmt.executeQuery(sql);
+        try (Connection conn = getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
             
             while (rs.next()) {
                 bookings.add(mapResultSetToBooking(rs));
@@ -117,8 +111,6 @@ public class BookingRepository extends BaseRepository implements GenericDAO<Book
             
         } catch (SQLException e) {
             throw new DAOException("Ошибка при получении всех бронирований", e);
-        } finally {
-            closeResources(rs, stmt);
         }
         
         return bookings;
@@ -129,29 +121,32 @@ public class BookingRepository extends BaseRepository implements GenericDAO<Book
         String sql = "UPDATE booking SET guest_id = ?, room_id = ?, check_in_date = ?, " +
                      "check_out_date = ?, is_active = ? WHERE id = ?";
         
-        Connection conn = null;
-        PreparedStatement stmt = null;
-        
-        try {
-            conn = getConnection();
-            stmt = conn.prepareStatement(sql);
+        try (Connection conn = getConnection()) {
+            conn.setAutoCommit(false);
             
-            stmt.setLong(1, booking.getGuest().getId());
-            stmt.setLong(2, booking.getRoom().getId());
-            stmt.setString(3, booking.getCheckInDate().toString());
-            stmt.setString(4, booking.getCheckOutDate().toString());
-            stmt.setBoolean(5, booking.isActive());
-            stmt.setLong(6, booking.getId());
-            
-            int rowsUpdated = stmt.executeUpdate();
-            if (rowsUpdated == 0) {
-                throw new DAOException("Бронирование не найдено для обновления: ID=" + booking.getId());
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                
+                stmt.setLong(1, booking.getGuest().getId());
+                stmt.setLong(2, booking.getRoom().getId());
+                stmt.setString(3, booking.getCheckInDate().toString());
+                stmt.setString(4, booking.getCheckOutDate().toString());
+                stmt.setBoolean(5, booking.isActive());
+                stmt.setLong(6, booking.getId());
+                
+                int rowsUpdated = stmt.executeUpdate();
+                if (rowsUpdated == 0) {
+                    conn.rollback();
+                    throw new DAOException("Бронирование не найдено для обновления: ID=" + booking.getId());
+                }
+                
+                conn.commit();
+                
+            } catch (SQLException e) {
+                conn.rollback();
+                throw new DAOException("Ошибка при обновлении бронирования: " + booking.getId(), e);
             }
-            
         } catch (SQLException e) {
             throw new DAOException("Ошибка при обновлении бронирования: " + booking.getId(), e);
-        } finally {
-            closeResources(null, stmt);
         }
     }
     
@@ -159,38 +154,39 @@ public class BookingRepository extends BaseRepository implements GenericDAO<Book
     public void delete(Long id) throws DAOException {
         String sql = "DELETE FROM booking WHERE id = ?";
         
-        Connection conn = null;
-        PreparedStatement stmt = null;
-        
-        try {
-            conn = getConnection();
-            stmt = conn.prepareStatement(sql);
-            stmt.setLong(1, id);
+        try (Connection conn = getConnection()) {
+            conn.setAutoCommit(false);
             
-            int rowsDeleted = stmt.executeUpdate();
-            if (rowsDeleted == 0) {
-                throw new DAOException("Бронирование не найдено для удаления: ID=" + id);
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setLong(1, id);
+                
+                int rowsDeleted = stmt.executeUpdate();
+                if (rowsDeleted == 0) {
+                    conn.rollback();
+                    throw new DAOException("Бронирование не найдено для удаления: ID=" + id);
+                }
+                
+                conn.commit();
+                
+            } catch (SQLException e) {
+                conn.rollback();
+                throw new DAOException("Ошибка при удалении бронирования: " + id, e);
             }
-            
         } catch (SQLException e) {
             throw new DAOException("Ошибка при удалении бронирования: " + id, e);
-        } finally {
-            closeResources(null, stmt);
         }
     }
     
     public List<Booking> findActiveBookings() throws DAOException {
         List<Booking> bookings = new ArrayList<>();
-        String sql = "SELECT * FROM booking WHERE is_active = TRUE ORDER BY check_in_date";
+        String sql = "SELECT b.*, g.*, r.* FROM booking b " +
+                     "JOIN guest g ON b.guest_id = g.id " +
+                     "JOIN room r ON b.room_id = r.id " +
+                     "WHERE b.is_active = TRUE ORDER BY b.check_in_date";
         
-        Connection conn = null;
-        Statement stmt = null;
-        ResultSet rs = null;
-        
-        try {
-            conn = getConnection();
-            stmt = conn.createStatement();
-            rs = stmt.executeQuery(sql);
+        try (Connection conn = getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
             
             while (rs.next()) {
                 bookings.add(mapResultSetToBooking(rs));
@@ -198,111 +194,141 @@ public class BookingRepository extends BaseRepository implements GenericDAO<Book
             
         } catch (SQLException e) {
             throw new DAOException("Ошибка при поиске активных бронирований", e);
-        } finally {
-            closeResources(rs, stmt);
         }
         
         return bookings;
     }
+
+    public List<Booking> findActiveBookingsOrderedByGuestName() throws DAOException {
+    List<Booking> bookings = new ArrayList<>();
+    String sql = "SELECT b.*, g.*, r.* FROM booking b " +
+                 "JOIN guest g ON b.guest_id = g.id " +
+                 "JOIN room r ON b.room_id = r.id " +
+                 "WHERE b.is_active = TRUE ORDER BY g.name";
     
-    public List<Booking> findByGuestId(Long guestId) throws DAOException {
-        List<Booking> bookings = new ArrayList<>();
-        String sql = "SELECT * FROM booking WHERE guest_id = ? ORDER BY check_in_date DESC";
+    try (Connection conn = getConnection();
+         Statement stmt = conn.createStatement();
+         ResultSet rs = stmt.executeQuery(sql)) {
         
-        Connection conn = null;
-        PreparedStatement stmt = null;
-        ResultSet rs = null;
-        
-        try {
-            conn = getConnection();
-            stmt = conn.prepareStatement(sql);
-            stmt.setLong(1, guestId);
-            
-            rs = stmt.executeQuery();
-            while (rs.next()) {
-                bookings.add(mapResultSetToBooking(rs));
-            }
-            
-        } catch (SQLException e) {
-            throw new DAOException("Ошибка при поиске бронирований гостя: " + guestId, e);
-        } finally {
-            closeResources(rs, stmt);
+        while (rs.next()) {
+            bookings.add(mapResultSetToBooking(rs));
         }
         
-        return bookings;
+    } catch (SQLException e) {
+        throw new DAOException("Ошибка при поиске активных бронирований, отсортированных по имени гостя", e);
+    }
+    
+    return bookings;
+}
+
+public List<Booking> findActiveBookingsOrderedByCheckoutDate() throws DAOException {
+    List<Booking> bookings = new ArrayList<>();
+    String sql = "SELECT b.*, g.*, r.* FROM booking b " +
+                 "JOIN guest g ON b.guest_id = g.id " +
+                 "JOIN room r ON b.room_id = r.id " +
+                 "WHERE b.is_active = TRUE ORDER BY b.check_out_date";
+    
+    try (Connection conn = getConnection();
+         Statement stmt = conn.createStatement();
+         ResultSet rs = stmt.executeQuery(sql)) {
+        
+        while (rs.next()) {
+            bookings.add(mapResultSetToBooking(rs));
+        }
+        
+    } catch (SQLException e) {
+        throw new DAOException("Ошибка при поиске активных бронирований, отсортированных по дате выезда", e);
+    }
+    
+    return bookings;
     }
     
     public List<Booking> findByRoomId(Long roomId) throws DAOException {
         List<Booking> bookings = new ArrayList<>();
-        String sql = "SELECT * FROM booking WHERE room_id = ? ORDER BY check_in_date DESC";
+        String sql = "SELECT b.*, g.*, r.* FROM booking b " +
+                     "JOIN guest g ON b.guest_id = g.id " +
+                     "JOIN room r ON b.room_id = r.id " +
+                     "WHERE b.room_id = ? ORDER BY b.check_in_date DESC";
         
-        Connection conn = null;
-        PreparedStatement stmt = null;
-        ResultSet rs = null;
-        
-        try {
-            conn = getConnection();
-            stmt = conn.prepareStatement(sql);
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
             stmt.setLong(1, roomId);
             
-            rs = stmt.executeQuery();
-            while (rs.next()) {
-                bookings.add(mapResultSetToBooking(rs));
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    bookings.add(mapResultSetToBooking(rs));
+                }
             }
             
         } catch (SQLException e) {
             throw new DAOException("Ошибка при поиске бронирований комнаты: " + roomId, e);
-        } finally {
-            closeResources(rs, stmt);
         }
         
         return bookings;
     }
     
-    public List<Booking> findBookingsByDateRange(LocalDate startDate, LocalDate endDate) throws DAOException {
+    public List<Booking> findLastThreeGuestsByRoomId(Long roomId) throws DAOException {
         List<Booking> bookings = new ArrayList<>();
-        String sql = "SELECT * FROM booking WHERE check_in_date <= ? AND check_out_date >= ? ORDER BY check_in_date";
+        String sql = "SELECT b.*, g.*, r.* FROM booking b " +
+                     "JOIN guest g ON b.guest_id = g.id " +
+                     "JOIN room r ON b.room_id = r.id " +
+                     "WHERE b.room_id = ? AND b.is_active = FALSE " +
+                     "ORDER BY b.check_out_date DESC LIMIT 3";
         
-        Connection conn = null;
-        PreparedStatement stmt = null;
-        ResultSet rs = null;
-        
-        try {
-            conn = getConnection();
-            stmt = conn.prepareStatement(sql);
-            stmt.setString(1, endDate.toString());
-            stmt.setString(2, startDate.toString());
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             
-            rs = stmt.executeQuery();
-            while (rs.next()) {
-                bookings.add(mapResultSetToBooking(rs));
+            stmt.setLong(1, roomId);
+            
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    bookings.add(mapResultSetToBooking(rs));
+                }
             }
             
         } catch (SQLException e) {
-            throw new DAOException("Ошибка при поиске бронирований по диапазону дат", e);
-        } finally {
-            closeResources(rs, stmt);
+            throw new DAOException("Ошибка при поиске истории комнаты: " + roomId, e);
         }
         
         return bookings;
     }
     
-    private Booking mapResultSetToBooking(ResultSet rs) throws SQLException, DAOException {
+    private Booking mapResultSetToBooking(ResultSet rs) throws SQLException {
         Booking booking = new Booking();
         
-        booking.setId(rs.getLong("id"));
-        booking.setCheckInDate(LocalDate.parse(rs.getString("check_in_date")));
-        booking.setCheckOutDate(LocalDate.parse(rs.getString("check_out_date")));
-        booking.setActive(rs.getBoolean("is_active"));
+        booking.setId(rs.getLong("b.id"));
+        booking.setCheckInDate(LocalDate.parse(rs.getString("b.check_in_date")));
+        booking.setCheckOutDate(LocalDate.parse(rs.getString("b.check_out_date")));
+        booking.setActive(rs.getBoolean("b.is_active"));
         
-        Long guestId = rs.getLong("guest_id");
-        Guest guest = guestRepo.findById(guestId)
-                .orElseThrow(() -> new DAOException("Гость не найден: ID=" + guestId));
+        Guest guest = new Guest();
+        guest.setId(rs.getLong("g.id"));
+        guest.setName(rs.getString("g.name"));
+        guest.setPassportNumber(rs.getString("g.passport_number"));
         booking.setGuest(guest);
         
-        Long roomId = rs.getLong("room_id");
-        Room room = roomRepo.findById(roomId)
-                .orElseThrow(() -> new DAOException("Комната не найдена: ID=" + roomId));
+        Room room = new Room();
+        room.setId(rs.getLong("r.id"));
+        room.setNumber(rs.getString("r.number"));
+        room.setPrice(rs.getDouble("r.price"));
+        room.setCapacity(rs.getInt("r.capacity"));
+        room.setStars(rs.getInt("r.stars"));
+        
+        String typeStr = rs.getString("r.type");
+        try {
+            room.setType(RoomType.valueOf(typeStr));
+        } catch (IllegalArgumentException e) {
+            room.setType(RoomType.STANDARD);
+        }
+        
+        String statusStr = rs.getString("r.status");
+        try {
+            room.setStatus(RoomStatus.valueOf(statusStr));
+        } catch (IllegalArgumentException e) {
+            room.setStatus(RoomStatus.AVAILABLE);
+        }
+        
         booking.setRoom(room);
         
         return booking;

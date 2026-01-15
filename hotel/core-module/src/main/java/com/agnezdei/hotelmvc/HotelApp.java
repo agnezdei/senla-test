@@ -43,7 +43,7 @@ public class HotelApp {
             GuestRepository guestRepo = new GuestRepository(dbConfig);
             ServiceRepository serviceRepo = new ServiceRepository(dbConfig);
             GuestServiceRepository guestServiceRepo = new GuestServiceRepository(dbConfig);
-            BookingRepository bookingRepo = new BookingRepository(dbConfig, guestRepo, roomRepo);
+            BookingRepository bookingRepo = new BookingRepository(dbConfig);
             
             container.register(BookingRepository.class, bookingRepo);
             container.register(RoomRepository.class, roomRepo);

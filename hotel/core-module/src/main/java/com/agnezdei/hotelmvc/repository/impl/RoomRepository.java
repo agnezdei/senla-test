@@ -5,7 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -28,40 +28,105 @@ public class RoomRepository extends BaseRepository implements GenericDAO<Room, L
         String sql = "INSERT INTO room (number, type, status, price, capacity, stars) " +
                      "VALUES (?, ?, ?, ?, ?, ?)";
         
-        Connection conn = null;
-        PreparedStatement stmt = null;
-        ResultSet generatedKeys = null;
-        
-        try {
-            conn = getConnection();
-            stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+        try (Connection conn = getConnection()) {
+            conn.setAutoCommit(false);
             
-            stmt.setString(1, room.getNumber());
-            stmt.setString(2, room.getType().name());
-            stmt.setString(3, room.getStatus().name()); 
-            stmt.setDouble(4, room.getPrice());
-            stmt.setInt(5, room.getCapacity());
-            stmt.setInt(6, room.getStars());
-            
-            int affectedRows = stmt.executeUpdate();
-            
-            if (affectedRows == 0) {
-                throw new DAOException("Создание комнаты не удалось, ни одна запись не добавлена");
+            try (PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+                
+                stmt.setString(1, room.getNumber());
+                stmt.setString(2, room.getType().name());
+                stmt.setString(3, room.getStatus().name()); 
+                stmt.setDouble(4, room.getPrice());
+                stmt.setInt(5, room.getCapacity());
+                stmt.setInt(6, room.getStars());
+                
+                int affectedRows = stmt.executeUpdate();
+                
+                if (affectedRows == 0) {
+                    conn.rollback();
+                    throw new DAOException("Создание комнаты не удалось, ни одна запись не добавлена");
+                }
+                
+                try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
+                    if (generatedKeys.next()) {
+                        room.setId(generatedKeys.getLong(1));
+                    } else {
+                        conn.rollback();
+                        throw new DAOException("Создание комнаты не удалось, ID не получен");
+                    }
+                }
+                
+                conn.commit();
+                return room;
+                
+            } catch (SQLException e) {
+                conn.rollback();
+                throw new DAOException("Ошибка при сохранении комнаты: " + room.getNumber(), e);
             }
-            
-            generatedKeys = stmt.getGeneratedKeys();
-            if (generatedKeys.next()) {
-                room.setId(generatedKeys.getLong(1));
-            } else {
-                throw new DAOException("Создание комнаты не удалось, ID не получен");
-            }
-            
-            return room;
-            
         } catch (SQLException e) {
             throw new DAOException("Ошибка при сохранении комнаты: " + room.getNumber(), e);
-        } finally {
-            closeResources(generatedKeys, stmt);
+        }
+    }
+
+    @Override
+    public void update(Room room) throws DAOException {
+        String sql = "UPDATE room SET number = ?, type = ?, status = ?, " +
+                     "price = ?, capacity = ?, stars = ? WHERE id = ?";
+        
+        try (Connection conn = getConnection()) {
+            conn.setAutoCommit(false);
+            
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                
+                stmt.setString(1, room.getNumber());
+                stmt.setString(2, room.getType().name());
+                stmt.setString(3, room.getStatus().name());
+                stmt.setDouble(4, room.getPrice());
+                stmt.setInt(5, room.getCapacity());
+                stmt.setInt(6, room.getStars());
+                stmt.setLong(7, room.getId());
+                
+                int rowsUpdated = stmt.executeUpdate();
+                if (rowsUpdated == 0) {
+                    conn.rollback();
+                    throw new DAOException("Комната не найдена для обновления: ID=" + room.getId());
+                }
+                
+                conn.commit();
+                
+            } catch (SQLException e) {
+                conn.rollback();
+                throw new DAOException("Ошибка при обновлении комнаты: " + room.getId(), e);
+            }
+        } catch (SQLException e) {
+            throw new DAOException("Ошибка при обновлении комнаты: " + room.getId(), e);
+        }
+    }
+    
+    @Override
+    public void delete(Long id) throws DAOException {
+        String sql = "DELETE FROM room WHERE id = ?";
+        
+        try (Connection conn = getConnection()) {
+            conn.setAutoCommit(false);
+            
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setLong(1, id);
+                
+                int rowsDeleted = stmt.executeUpdate();
+                if (rowsDeleted == 0) {
+                    conn.rollback();
+                    throw new DAOException("Комната не найдена для удаления: ID=" + id);
+                }
+                
+                conn.commit();
+                
+            } catch (SQLException e) {
+                conn.rollback();
+                throw new DAOException("Ошибка при удалении комнаты: " + id, e);
+            }
+        } catch (SQLException e) {
+            throw new DAOException("Ошибка при удалении комнаты: " + id, e);
         }
     }
     
@@ -69,25 +134,20 @@ public class RoomRepository extends BaseRepository implements GenericDAO<Room, L
     public Optional<Room> findById(Long id) throws DAOException {
         String sql = "SELECT * FROM room WHERE id = ?";
         
-        Connection conn = null;
-        PreparedStatement stmt = null;
-        ResultSet rs = null;
-        
-        try {
-            conn = getConnection();
-            stmt = conn.prepareStatement(sql);
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
             stmt.setLong(1, id);
             
-            rs = stmt.executeQuery();
-            if (rs.next()) {
-                return Optional.of(mapResultSetToRoom(rs));
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(mapResultSetToRoom(rs));
+                }
+                return Optional.empty();
             }
-            return Optional.empty();
             
         } catch (SQLException e) {
             throw new DAOException("Ошибка при поиске комнаты по ID: " + id, e);
-        } finally {
-            closeResources(rs, stmt);
         }
     }
     
@@ -96,14 +156,9 @@ public class RoomRepository extends BaseRepository implements GenericDAO<Room, L
         List<Room> rooms = new ArrayList<>();
         String sql = "SELECT * FROM room ORDER BY number";
         
-        Connection conn = null;
-        Statement stmt = null;
-        ResultSet rs = null;
-        
-        try {
-            conn = getConnection();
-            stmt = conn.createStatement();
-            rs = stmt.executeQuery(sql);
+        try (Connection conn = getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
             
             while (rs.next()) {
                 rooms.add(mapResultSetToRoom(rs));
@@ -111,91 +166,28 @@ public class RoomRepository extends BaseRepository implements GenericDAO<Room, L
             
         } catch (SQLException e) {
             throw new DAOException("Ошибка при получении всех комнат", e);
-        } finally {
-            closeResources(rs, stmt);
         }
         
         return rooms;
     }
     
-    @Override
-    public void update(Room room) throws DAOException {
-        String sql = "UPDATE room SET number = ?, type = ?, status = ?, " +
-                     "price = ?, capacity = ?, stars = ? WHERE id = ?";
-        
-        Connection conn = null;
-        PreparedStatement stmt = null;
-        
-        try {
-            conn = getConnection();
-            stmt = conn.prepareStatement(sql);
-            
-            stmt.setString(1, room.getNumber());
-            stmt.setString(2, room.getType().name());
-            stmt.setString(3, room.getStatus().name());
-            stmt.setDouble(4, room.getPrice());
-            stmt.setInt(5, room.getCapacity());
-            stmt.setInt(6, room.getStars());
-            stmt.setLong(7, room.getId());
-            
-            int rowsUpdated = stmt.executeUpdate();
-            if (rowsUpdated == 0) {
-                throw new DAOException("Комната не найдена для обновления: ID=" + room.getId());
-            }
-            
-        } catch (SQLException e) {
-            throw new DAOException("Ошибка при обновлении комнаты: " + room.getId(), e);
-        } finally {
-            closeResources(null, stmt);
-        }
-    }
-    
-    @Override
-    public void delete(Long id) throws DAOException {
-        String sql = "DELETE FROM room WHERE id = ?";
-        
-        Connection conn = null;
-        PreparedStatement stmt = null;
-        
-        try {
-            conn = getConnection();
-            stmt = conn.prepareStatement(sql);
-            stmt.setLong(1, id);
-            
-            int rowsDeleted = stmt.executeUpdate();
-            if (rowsDeleted == 0) {
-                throw new DAOException("Комната не найдена для удаления: ID=" + id);
-            }
-            
-        } catch (SQLException e) {
-            throw new DAOException("Ошибка при удалении комнаты: " + id, e);
-        } finally {
-            closeResources(null, stmt);
-        }
-    }
-    
     public Optional<Room> findByNumber(String number) throws DAOException {
         String sql = "SELECT * FROM room WHERE number = ?";
         
-        Connection conn = null;
-        PreparedStatement stmt = null;
-        ResultSet rs = null;
-        
-        try {
-            conn = getConnection();
-            stmt = conn.prepareStatement(sql);
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
             stmt.setString(1, number);
             
-            rs = stmt.executeQuery();
-            if (rs.next()) {
-                return Optional.of(mapResultSetToRoom(rs));
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(mapResultSetToRoom(rs));
+                }
+                return Optional.empty();
             }
-            return Optional.empty();
             
         } catch (SQLException e) {
             throw new DAOException("Ошибка при поиске комнаты по номеру: " + number, e);
-        } finally {
-            closeResources(rs, stmt);
         }
     }
     
@@ -203,14 +195,9 @@ public class RoomRepository extends BaseRepository implements GenericDAO<Room, L
         List<Room> rooms = new ArrayList<>();
         String sql = "SELECT * FROM room WHERE status = 'AVAILABLE' ORDER BY number";
         
-        Connection conn = null;
-        Statement stmt = null;
-        ResultSet rs = null;
-        
-        try {
-            conn = getConnection();
-            stmt = conn.createStatement();
-            rs = stmt.executeQuery(sql);
+        try (Connection conn = getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
             
             while (rs.next()) {
                 rooms.add(mapResultSetToRoom(rs));
@@ -218,65 +205,186 @@ public class RoomRepository extends BaseRepository implements GenericDAO<Room, L
             
         } catch (SQLException e) {
             throw new DAOException("Ошибка при поиске доступных комнат", e);
-        } finally {
-            closeResources(rs, stmt);
         }
         
         return rooms;
     }
+
+    public List<Room> findAllOrderedByPrice() throws DAOException {
+    List<Room> rooms = new ArrayList<>();
+    String sql = "SELECT * FROM room ORDER BY price";
     
-    public List<Room> findByType(RoomType type) throws DAOException {
-        List<Room> rooms = new ArrayList<>();
-        String sql = "SELECT * FROM room WHERE type = ? ORDER BY number";
+    try (Connection conn = getConnection();
+         Statement stmt = conn.createStatement();
+         ResultSet rs = stmt.executeQuery(sql)) {
         
-        Connection conn = null;
-        PreparedStatement stmt = null;
-        ResultSet rs = null;
-        
-        try {
-            conn = getConnection();
-            stmt = conn.prepareStatement(sql);
-            stmt.setString(1, type.name());
-            
-            rs = stmt.executeQuery();
-            while (rs.next()) {
-                rooms.add(mapResultSetToRoom(rs));
-            }
-            
-        } catch (SQLException e) {
-            throw new DAOException("Ошибка при поиске комнат по типу: " + type, e);
-        } finally {
-            closeResources(rs, stmt);
+        while (rs.next()) {
+            rooms.add(mapResultSetToRoom(rs));
         }
         
-        return rooms;
+    } catch (SQLException e) {
+        throw new DAOException("Ошибка при получении комнат, отсортированных по цене", e);
     }
     
-    public List<Room> findByStatus(RoomStatus status) throws DAOException {
-        List<Room> rooms = new ArrayList<>();
-        String sql = "SELECT * FROM room WHERE status = ? ORDER BY number";
+    return rooms;
+}
+
+public List<Room> findAllOrderedByCapacity() throws DAOException {
+    List<Room> rooms = new ArrayList<>();
+    String sql = "SELECT * FROM room ORDER BY capacity";
+    
+    try (Connection conn = getConnection();
+         Statement stmt = conn.createStatement();
+         ResultSet rs = stmt.executeQuery(sql)) {
         
-        Connection conn = null;
-        PreparedStatement stmt = null;
-        ResultSet rs = null;
-        
-        try {
-            conn = getConnection();
-            stmt = conn.prepareStatement(sql);
-            stmt.setString(1, status.name());
-            
-            rs = stmt.executeQuery();
-            while (rs.next()) {
-                rooms.add(mapResultSetToRoom(rs));
-            }
-            
-        } catch (SQLException e) {
-            throw new DAOException("Ошибка при поиске комнат по статусу: " + status, e);
-        } finally {
-            closeResources(rs, stmt);
+        while (rs.next()) {
+            rooms.add(mapResultSetToRoom(rs));
         }
         
-        return rooms;
+    } catch (SQLException e) {
+        throw new DAOException("Ошибка при получении комнат, отсортированных по вместимости", e);
+    }
+    
+    return rooms;
+}
+
+public List<Room> findAllOrderedByStars() throws DAOException {
+    List<Room> rooms = new ArrayList<>();
+    String sql = "SELECT * FROM room ORDER BY stars";
+    
+    try (Connection conn = getConnection();
+         Statement stmt = conn.createStatement();
+         ResultSet rs = stmt.executeQuery(sql)) {
+        
+        while (rs.next()) {
+            rooms.add(mapResultSetToRoom(rs));
+        }
+        
+    } catch (SQLException e) {
+        throw new DAOException("Ошибка при получении комнат, отсортированных по звездам", e);
+    }
+    
+    return rooms;
+}
+
+public List<Room> findAvailableRoomsOrderedByPrice() throws DAOException {
+    List<Room> rooms = new ArrayList<>();
+    String sql = "SELECT * FROM room WHERE status = 'AVAILABLE' ORDER BY price";
+    
+    try (Connection conn = getConnection();
+         Statement stmt = conn.createStatement();
+         ResultSet rs = stmt.executeQuery(sql)) {
+        
+        while (rs.next()) {
+            rooms.add(mapResultSetToRoom(rs));
+        }
+        
+    } catch (SQLException e) {
+        throw new DAOException("Ошибка при получении доступных комнат, отсортированных по цене", e);
+    }
+    
+    return rooms;
+}
+
+public List<Room> findAvailableRoomsOrderedByCapacity() throws DAOException {
+    List<Room> rooms = new ArrayList<>();
+    String sql = "SELECT * FROM room WHERE status = 'AVAILABLE' ORDER BY capacity";
+    
+    try (Connection conn = getConnection();
+         Statement stmt = conn.createStatement();
+         ResultSet rs = stmt.executeQuery(sql)) {
+        
+        while (rs.next()) {
+            rooms.add(mapResultSetToRoom(rs));
+        }
+        
+    } catch (SQLException e) {
+        throw new DAOException("Ошибка при получении доступных комнат, отсортированных по вместимости", e);
+    }
+    
+    return rooms;
+}
+
+public List<Room> findAvailableRoomsOrderedByStars() throws DAOException {
+    List<Room> rooms = new ArrayList<>();
+    String sql = "SELECT * FROM room WHERE status = 'AVAILABLE' ORDER BY stars";
+    
+    try (Connection conn = getConnection();
+         Statement stmt = conn.createStatement();
+         ResultSet rs = stmt.executeQuery(sql)) {
+        
+        while (rs.next()) {
+            rooms.add(mapResultSetToRoom(rs));
+        }
+        
+    } catch (SQLException e) {
+        throw new DAOException("Ошибка при получении доступных комнат, отсортированных по звездам", e);
+    }
+    
+    return rooms;
+    }
+
+    public List<Room> findAllOrderedByTypeAndPrice() throws DAOException {
+    List<Room> rooms = new ArrayList<>();
+    String sql = "SELECT * FROM room ORDER BY type, price";
+    
+    try (Connection conn = getConnection();
+         Statement stmt = conn.createStatement();
+         ResultSet rs = stmt.executeQuery(sql)) {
+        
+        while (rs.next()) {
+            rooms.add(mapResultSetToRoom(rs));
+        }
+        
+    } catch (SQLException e) {
+        throw new DAOException("Ошибка при получении комнат, отсортированных по типу и цене", e);
+    }
+    
+    return rooms;
+    }
+
+    public List<Room> findRoomsAvailableOnDate(LocalDate date) throws DAOException {
+    List<Room> availableRooms = new ArrayList<>();
+    String sql = "SELECT r.* FROM room r WHERE r.status = 'AVAILABLE' " +
+                 "AND r.id NOT IN (" +
+                 "  SELECT b.room_id FROM booking b " +
+                 "  WHERE b.is_active = TRUE " +
+                 "  AND ? BETWEEN b.check_in_date AND b.check_out_date" +
+                 ") ORDER BY r.number";
+    
+    try (Connection conn = getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+        
+        stmt.setString(1, date.toString());
+        
+        try (ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                availableRooms.add(mapResultSetToRoom(rs));
+            }
+        }
+        
+    } catch (SQLException e) {
+        throw new DAOException("Ошибка при поиске комнат на дату: " + date, e);
+    }
+    
+    return availableRooms;
+}
+
+public int countAvailableRooms() throws DAOException {
+    String sql = "SELECT COUNT(*) as count FROM room WHERE status = 'AVAILABLE'";
+    
+    try (Connection conn = getConnection();
+         Statement stmt = conn.createStatement();
+         ResultSet rs = stmt.executeQuery(sql)) {
+        
+        if (rs.next()) {
+            return rs.getInt("count");
+        }
+        return 0;
+        
+    } catch (SQLException e) {
+        throw new DAOException("Ошибка при подсчете доступных комнат", e);
+    }
     }
     
     private Room mapResultSetToRoom(ResultSet rs) throws SQLException {
@@ -301,13 +409,7 @@ public class RoomRepository extends BaseRepository implements GenericDAO<Room, L
         } catch (IllegalArgumentException e) {
             room.setStatus(RoomStatus.AVAILABLE);
         }
-
-        Timestamp createdAt = rs.getTimestamp("created_at");
- 
+        
         return room;
-    }
-    
-    protected Connection getConnection() throws SQLException {
-        return super.getConnection();
     }
 }
