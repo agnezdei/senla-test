@@ -9,7 +9,6 @@ import java.util.Properties;
 
 public class DatabaseConfig {
     private static DatabaseConfig instance;
-    private static Connection connection;
     private final Properties properties;
     
     private DatabaseConfig() {
@@ -25,24 +24,7 @@ public class DatabaseConfig {
     }
     
     public Connection getConnection() throws SQLException {
-        if (connection == null || connection.isClosed()) {
-            connection = createConnection();
-        }
-        return connection;
-    }
-    
-    public void closeConnection() {
-        if (connection != null) {
-            try {
-                if (!connection.isClosed()) {
-                    connection.close();
-                }
-            } catch (SQLException e) {
-                System.err.println("Ошибка при закрытии соединения: " + e.getMessage());
-            } finally {
-                connection = null;
-            }
-        }
+        return createConnection();
     }
     
     private Properties loadProperties() {
@@ -91,16 +73,4 @@ public class DatabaseConfig {
     public String getProperty(String key) {
         return properties.getProperty(key);
     }
-
-    public abstract class BaseRepository {
-    protected final DatabaseConfig databaseConfig;
-    
-    public BaseRepository(DatabaseConfig databaseConfig) {
-        this.databaseConfig = databaseConfig;
-    }
-    
-    protected Connection getConnection() throws SQLException {
-        return databaseConfig.getConnection();
-    }
-}
 }
