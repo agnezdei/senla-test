@@ -12,10 +12,16 @@ public class Guest implements Serializable {
         this.name = name;
         this.passportNumber = passportNumber;
     }
+
+    public Guest() {
+    }
     
     public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
     public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
     public String getPassportNumber() { return passportNumber; }
+    public void setPassportNumber(String pasportNumber) { this.passportNumber = pasportNumber; }
     
     @Override
     public String toString() {

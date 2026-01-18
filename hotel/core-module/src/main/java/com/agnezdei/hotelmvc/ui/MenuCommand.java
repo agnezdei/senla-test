@@ -23,23 +23,25 @@ public enum MenuCommand {
     SHOW_TOTAL_AVAILABLE(17, "Общее число свободных номеров"),
     SHOW_TOTAL_GUESTS(18, "Общее число постояльцев"),
     SHOW_ROOMS_BY_DATE(19, "Номера свободные на дату"),
-    SHOW_PAYMENT_AMOUNT(20, "Сумма оплаты за номер"),
+    SHOW_PAYMENT_AMOUNT(20, "Сумма оплаты для гостя"),
     SHOW_LAST_THREE_GUESTS(21, "3 последних постояльца номера"),
     
     SHOW_GUEST_SERVICES_PRICE(22, "Услуги гостя (по цене)"),
     SHOW_GUEST_SERVICES_DATE(23, "Услуги гостя (по дате)"),
     SHOW_PRICE_LIST(24, "Прайс-лист"),
     SHOW_ROOM_DETAILS(25, "Детали номера"),
-    ADD_SERVICE_TO_BOOKING(26, "Добавить услугу к бронированию"),
+    ADD_SERVICE_TO_GUEST(26, "Добавить услугу к гостю"),
 
     EXPORT_ROOMS(27, "Экспорт номеров в CSV"),
     EXPORT_SERVICES(28, "Экспорт услуг в CSV"),
     EXPORT_GUESTS(29, "Экспорт гостей в CSV"),
     EXPORT_BOOKINGS(30, "Экспорт бронирований в CSV"),
-    IMPORT_ROOMS(31, "Импорт номеров из CSV"),
-    IMPORT_SERVICES(32, "Импорт услуг из CSV"),
-    IMPORT_GUESTS(33, "Импорт гостей из CSV"),
-    IMPORT_BOOKINGS(34, "Импорт бронирований из CSV");
+    EXPORT_GUEST_SERVICES(31, "Экспорт услуг гостей в CSV"),
+    IMPORT_ROOMS(32, "Импорт номеров из CSV"),
+    IMPORT_SERVICES(33, "Импорт услуг из CSV"),
+    IMPORT_GUESTS(34, "Импорт гостей из CSV"),
+    IMPORT_BOOKINGS(35, "Импорт бронирований из CSV"),
+    IMPORT_GUESTS_SERVICES(36, "Импорт услуг гостей из CSV");
 
     private final int code;
     private final String description;
@@ -99,7 +101,7 @@ public enum MenuCommand {
 
         System.out.println("\n--- ИМПОРТ/ЭКСПОРТ ---");
         for (MenuCommand command : values()) {
-            if (command.getCode() >= 27 && command.getCode() <= 34) {
+            if (command.getCode() >= 27 && command.getCode() <= 36) {
                 System.out.println(command.getCode() + ". " + command.getDescription());
             }
         }

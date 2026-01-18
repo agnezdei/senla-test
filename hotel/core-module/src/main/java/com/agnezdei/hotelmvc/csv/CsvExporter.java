@@ -3,113 +3,149 @@ package com.agnezdei.hotelmvc.csv;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.List;
-import java.util.Locale;
 
-import com.agnezdei.hotelmvc.model.*;
+import com.agnezdei.hotelmvc.annotations.Inject;
+import com.agnezdei.hotelmvc.exceptions.DAOException;
+import com.agnezdei.hotelmvc.model.Booking;
+import com.agnezdei.hotelmvc.model.Guest;
+import com.agnezdei.hotelmvc.model.GuestService;
+import com.agnezdei.hotelmvc.model.Room;
+import com.agnezdei.hotelmvc.model.Service;
+import com.agnezdei.hotelmvc.repository.impl.BookingRepository;
+import com.agnezdei.hotelmvc.repository.impl.GuestRepository;
+import com.agnezdei.hotelmvc.repository.impl.GuestServiceRepository;
+import com.agnezdei.hotelmvc.repository.impl.RoomRepository;
+import com.agnezdei.hotelmvc.repository.impl.ServiceRepository;
 
 public class CsvExporter {
+    @Inject
+    private RoomRepository roomDAO;
+    
+    @Inject
+    private GuestRepository guestDAO;
+    
+    @Inject
+    private ServiceRepository serviceDAO;
+    
+    @Inject
+    private BookingRepository bookingDAO;
 
+    @Inject
+    private GuestServiceRepository guestServiceDAO;
+    
+    public CsvExporter() {
+    }
+    
     public void exportRooms(List<Room> rooms, String filePath) throws IOException {
-        try (FileWriter writer = new FileWriter(filePath)) {
-            writer.write("id,number,type,price,capacity,stars,status\n");
-            
-            for (Room room : rooms) {
-                String roomType = convertRoomTypeToRussian(room.getType());
-                String roomStatus = convertRoomStatusToRussian(room.getStatus());
-                
-                writer.write(String.format(Locale.US, "%d,%s,%s,%.2f,%d,%d,%s\n",
-                    room.getId(),
-                    escapeCsv(room.getNumber()),
-                    escapeCsv(roomType),
-                    room.getPrice(),
-                    room.getCapacity(),
-                    room.getStars(),
-                    escapeCsv(roomStatus)
-                ));
+        try {
+            if (rooms == null) {
+                rooms = roomDAO.findAll();
             }
-        }
-    }
-
-    public void exportServices(List<Service> services, String filePath) throws IOException {
-        try (FileWriter writer = new FileWriter(filePath)) {
-            writer.write("id,name,price,category\n");
-            
-            for (Service service : services) {
-                String serviceCategory = convertServiceCategoryToRussian(service.getCategory());
+        
+            try (FileWriter writer = new FileWriter(filePath)) {
+                writer.write("Номер,Тип,Цена,Вместимость,Звезды,Статус\n");
                 
-                writer.write(String.format(Locale.US, "%d,%s,%.2f,%s\n",
-                    service.getId(),
-                    escapeCsv(service.getName()),
-                    service.getPrice(),
-                    escapeCsv(serviceCategory)
-                ));
+                for (Room room : rooms) {
+                    writer.write(String.format("%s,%s,%.2f,%d,%d,%s\n",
+                        room.getNumber(),
+                        room.getType().name(),
+                        room.getPrice(),
+                        room.getCapacity(),
+                        room.getStars(),
+                        room.getStatus().name()
+                    ));
+                }
             }
-        }
+        } catch (DAOException e) {
+                throw new IOException("Ошибка при получении комнат из базы данных: " + e.getMessage(), e);
+            }
     }
-
+    
     public void exportGuests(List<Guest> guests, String filePath) throws IOException {
-        try (FileWriter writer = new FileWriter(filePath)) {
-            writer.write("id,name,passportNumber\n");
-            
-            for (Guest guest : guests) {
-                writer.write(String.format("%d,%s,%s\n",
-                    guest.getId(),
-                    escapeCsv(guest.getName()),
-                    escapeCsv(guest.getPassportNumber())
-                ));
+        try {
+            if (guests == null) {
+                guests = guestDAO.findAll();
             }
-        }
+            
+            try (FileWriter writer = new FileWriter(filePath)) {
+                writer.write("Имя,Номер паспорта\n");
+                
+                for (Guest guest : guests) {
+                    writer.write(String.format("%s,%s\n",
+                        guest.getName(),
+                        guest.getPassportNumber()
+                    ));
+                }
+            }
+        } catch (DAOException e) {
+                throw new IOException("Ошибка при получении гостей из базы данных: " + e.getMessage(), e);
+            }
     }
-
+    
+    public void exportServices(List<Service> services, String filePath) throws IOException {
+        try {
+            if (services == null) {
+                services = serviceDAO.findAll();
+            }
+            
+            try (FileWriter writer = new FileWriter(filePath)) {
+                writer.write("Название,Цена,Категория\n");
+                
+                for (Service service : services) {
+                    writer.write(String.format("%s,%.2f,%s\n",
+                        service.getName(),
+                        service.getPrice(),
+                        service.getCategory().name()
+                    ));
+                }
+            }
+        } catch (DAOException e) {
+                throw new IOException("Ошибка при получении услуг из базы данных: " + e.getMessage(), e);
+            }
+    }
+    
     public void exportBookings(List<Booking> bookings, String filePath) throws IOException {
-        try (FileWriter writer = new FileWriter(filePath)) {
-            writer.write("id,guestId,roomId,checkInDate,checkOutDate,isActive\n");
-            
-            for (Booking booking : bookings) {
-                writer.write(String.format("%d,%d,%d,%s,%s,%b\n",
-                    booking.getId(),
-                    booking.getGuest().getId(),
-                    booking.getRoom().getId(),
-                    booking.getCheckInDate().toString(),
-                    booking.getCheckOutDate().toString(),
-                    booking.isActive()
-                ));
+        try {
+            if (bookings == null) {
+                bookings = bookingDAO.findAll();
             }
-        }
+            
+            try (FileWriter writer = new FileWriter(filePath)) {
+                writer.write("Паспорт гостя,Номер комнаты,Дата заезда,Дата выезда,Активно\n");
+                
+                for (Booking booking : bookings) {
+                    writer.write(String.format("%s,%s,%s,%s,%s\n",
+                        booking.getGuest().getPassportNumber(),
+                        booking.getRoom().getNumber(),
+                        booking.getCheckInDate(),
+                        booking.getCheckOutDate(),
+                        booking.isActive()
+                    ));
+                }
+            }
+        } catch (DAOException e) {
+                throw new IOException("Ошибка при получении бронирований из базы данных: " + e.getMessage(), e);
+            }
     }
 
-    private String convertRoomTypeToRussian(RoomType type) {
-        switch (type) {
-            case STANDARD: return "Стандарт";
-            case BUSINESS: return "Бизнес";
-            case LUXURY: return "Люкс";
-            default: return type.toString();
-        }
-    }
-    
-    private String convertRoomStatusToRussian(RoomStatus status) {
-        switch (status) {
-            case AVAILABLE: return "Доступен";
-            case OCCUPIED: return "Занят";
-            case UNDER_MAINTENANCE: return "На ремонте";
-            default: return status.toString();
-        }
-    }
-    
-    private String convertServiceCategoryToRussian(ServiceCategory category) {
-        switch (category) {
-            case FOOD: return "Питание";
-            case CLEANING: return "Обслуживание";
-            case COMFORT: return "Комфорт";
-            default: return category.toString();
-        }
-    }
-
-    private String escapeCsv(String value) {
-        if (value == null) return "";
-        if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
-            return "\"" + value.replace("\"", "\"\"") + "\"";
-        }
-        return value;
+    public void exportGuestServices(List<GuestService> guestServices, String filePath) throws IOException {
+        try {
+            if (guestServices == null) {
+                guestServices = guestServiceDAO.findAll();
+            }
+            
+            try (FileWriter writer = new FileWriter(filePath)) {
+                writer.write("Гость,Услуга\n");
+                
+                for (GuestService guestService : guestServices) {
+                    writer.write(String.format("%s,%s\n",
+                        guestService.getGuest(),
+                        guestService.getService()
+                    ));
+                }
+            }
+        } catch (DAOException e) {
+                throw new IOException("Ошибка при получении услуг гостей из базы данных: " + e.getMessage(), e);
+            }
     }
 }

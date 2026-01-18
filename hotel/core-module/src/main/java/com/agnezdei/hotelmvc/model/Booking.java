@@ -1,9 +1,7 @@
 package com.agnezdei.hotelmvc.model;
 
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
 import java.io.Serializable;
+import java.time.LocalDate;
 
 public class Booking implements Serializable {
     private Long id;
@@ -11,8 +9,11 @@ public class Booking implements Serializable {
     private Room room;
     private LocalDate checkInDate;
     private LocalDate checkOutDate;
-    private List<ServiceWithDate> services;
     private boolean isActive;
+    
+    public Booking() {
+        this.isActive = true;
+    }
     
     public Booking(Long id, Guest guest, Room room, LocalDate checkInDate, LocalDate checkOutDate) {
         this.id = id;
@@ -20,53 +21,38 @@ public class Booking implements Serializable {
         this.room = room;
         this.checkInDate = checkInDate;
         this.checkOutDate = checkOutDate;
-        this.services = new ArrayList<>();
         this.isActive = true;
     }
     
+    // Геттеры и сеттеры
     public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    
     public Guest getGuest() { return guest; }
+    public void setGuest(Guest guest) { this.guest = guest; }
+    
     public Room getRoom() { return room; }
+    public void setRoom(Room room) { this.room = room; }
+    
     public LocalDate getCheckInDate() { return checkInDate; }
+    public void setCheckInDate(LocalDate checkInDate) { this.checkInDate = checkInDate; }
+    
     public LocalDate getCheckOutDate() { return checkOutDate; }
-    public List<ServiceWithDate> getServices() { return new ArrayList<>(services); }
-    public boolean isActive() { return isActive; }
-
     public void setCheckOutDate(LocalDate checkOutDate) { this.checkOutDate = checkOutDate; }
+    
+    public boolean isActive() { return isActive; }
     public void setActive(boolean active) { isActive = active; }
     
-    public static class ServiceWithDate implements Serializable{
-        private Service service;
-        private LocalDate date;
-        
-        public ServiceWithDate(Service service, LocalDate date) {
-            this.service = service;
-            this.date = date;
-        }
-        
-        public Service getService() { return service; }
-        public LocalDate getDate() { return date; }
-    }
-
-    public void addService(Service service, LocalDate serviceDate) {
-        this.services.add(new ServiceWithDate(service, serviceDate));
-    }
-
     public double calculateTotalPrice() {
         long days = checkOutDate.toEpochDay() - checkInDate.toEpochDay();
-        double roomCost = room.getPrice() * days;
-        
-        double servicesCost = 0;
-        for (ServiceWithDate serviceWithDate : services) {
-            servicesCost += serviceWithDate.getService().getPrice();
-        }
-        
-        return roomCost + servicesCost;
+        return room.getPrice() * days;
     }
-
+    
     @Override
     public String toString() {
-        return "Бронирование: " + guest.getName() + " в номере " + room.getNumber() + 
-               " (" + checkInDate + " - " + checkOutDate + ")";
+        return "Бронирование [id=" + id + ", гость=" + (guest != null ? guest.getName() : "null") 
+               + ", номер=" + (room != null ? room.getNumber() : "null") 
+               + ", " + checkInDate + " - " + checkOutDate 
+               + ", активен=" + isActive + "]";
     }
 }
