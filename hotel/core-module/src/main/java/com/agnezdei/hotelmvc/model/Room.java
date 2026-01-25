@@ -24,25 +24,65 @@ public class Room implements Serializable {
         this.status = RoomStatus.AVAILABLE;
     }
 
-    public Long getId() { return id; }
-    public int getCapacity() { return capacity; }
-    public int getStars() { return stars; }
-    public String getNumber() { return number; }
-    public RoomType getType() { return type; }
-    public double getPrice() { return price; }
-    public RoomStatus getStatus() { return status; }
-    
-    public void setId(Long id) { this.id = id; }
-    public void setCapacity(int capacity) { this.capacity = capacity; }
-    public void setStars(int stars) { this.stars = stars; }
-    public void setNumber(String number) { this.number = number; }
-    public void setType(RoomType type) { this.type = type; }
-    public void setPrice(double price) { this.price = price; }
-    public void setStatus(RoomStatus status) { this.status = status; }
+    public Long getId() {
+        return id;
+    }
+
+    public int getCapacity() {
+        return capacity;
+    }
+
+    public int getStars() {
+        return stars;
+    }
+
+    public String getNumber() {
+        return number;
+    }
+
+    public RoomType getType() {
+        return type;
+    }
+
+    public double getPrice() {
+        return price;
+    }
+
+    public RoomStatus getStatus() {
+        return status;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public void setCapacity(int capacity) {
+        this.capacity = capacity;
+    }
+
+    public void setStars(int stars) {
+        this.stars = stars;
+    }
+
+    public void setNumber(String number) {
+        this.number = number;
+    }
+
+    public void setType(RoomType type) {
+        this.type = type;
+    }
+
+    public void setPrice(double price) {
+        this.price = price;
+    }
+
+    public void setStatus(RoomStatus status) {
+        this.status = status;
+    }
 
     @Override
     public String toString() {
-        return "Номер " + number + " (" + type + ") - " + price + " руб. [" + status + 
-               "], Вместимость: " + capacity + ", Звёзды: " + stars;
+        return "Номер " + number + " (" + type + ") - " + price + " руб. [" + status +
+                "], Вместимость: " + capacity + ", Звёзды: " + stars;
     }
 }

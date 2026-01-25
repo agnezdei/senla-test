@@ -16,18 +16,18 @@ import com.agnezdei.hotelmvc.repository.impl.RoomRepository;
 public class RoomCsvImporter {
     @Inject
     private RoomRepository roomDAO;
-    
+
     public RoomCsvImporter() {
     }
-    
+
     public String importRooms(String filePath) {
         List<String> errors = new ArrayList<>();
         int imported = 0;
         int updated = 0;
-        
+
         try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
             String line = reader.readLine();
-            
+
             while ((line = reader.readLine()) != null) {
                 try {
                     String[] data = line.split(",");
@@ -35,16 +35,16 @@ public class RoomCsvImporter {
                         errors.add("Недостаточно данных в строке: " + line);
                         continue;
                     }
-                    
+
                     String number = data[0];
                     RoomType type = parseRoomType(data[1]);
                     double price = Double.parseDouble(data[2]);
                     int capacity = Integer.parseInt(data[3]);
                     int stars = Integer.parseInt(data[4]);
                     RoomStatus status = parseRoomStatus(data[5]);
-                    
+
                     Optional<Room> existingRoomOpt = roomDAO.findByNumber(number);
-                    
+
                     if (existingRoomOpt.isPresent()) {
                         Room room = existingRoomOpt.get();
                         room.setPrice(price);
@@ -52,7 +52,7 @@ public class RoomCsvImporter {
                         room.setCapacity(capacity);
                         room.setStars(stars);
                         room.setStatus(status);
-                        
+
                         roomDAO.update(room);
                         updated++;
                     } else {
@@ -63,67 +63,69 @@ public class RoomCsvImporter {
                         room.setCapacity(capacity);
                         room.setStars(stars);
                         room.setStatus(status);
-                        
+
                         roomDAO.save(room);
                         imported++;
                     }
-                    
+
                 } catch (Exception e) {
                     errors.add("Ошибка в строке: " + line + " - " + e.getMessage());
                 }
             }
-            
+
         } catch (IOException e) {
             return "Ошибка чтения файла: " + e.getMessage();
         }
-        
-        return String.format("Импорт комнат завершен: %d добавлено, %d обновлено. Ошибок: %d", 
-                           imported, updated, errors.size());
-    }
-    
-private RoomType parseRoomType(String typeStr) {
-    if (typeStr == null) return RoomType.STANDARD;
-    
-    switch (typeStr.toLowerCase().trim()) {
-        case "стандарт":
-        case "standard":
-            return RoomType.STANDARD;
-        case "бизнес":
-        case "business":
-            return RoomType.BUSINESS;
-        case "люкс":
-        case "luxury":
-            return RoomType.LUXURY;
-        default:
-            try {
-                return RoomType.valueOf(typeStr.toUpperCase());
-            } catch (IllegalArgumentException e) {
-                System.err.println("Неизвестный тип комнаты: " + typeStr + ", используем STANDARD");
-                return RoomType.STANDARD;
-            }
-    }
-}
 
-private RoomStatus parseRoomStatus(String statusStr) {
-    if (statusStr == null) return RoomStatus.AVAILABLE;
-    
-    switch (statusStr.toLowerCase().trim()) {
-        case "доступен":
-        case "available":
-            return RoomStatus.AVAILABLE;
-        case "занят":
-        case "occupied":
-            return RoomStatus.OCCUPIED;
-        case "на ремонте":
-        case "under_maintenance":
-            return RoomStatus.UNDER_MAINTENANCE;
-        default:
-            try {
-                return RoomStatus.valueOf(statusStr.toUpperCase());
-            } catch (IllegalArgumentException e) {
-                System.err.println("Неизвестный статус комнаты: " + statusStr + ", используем AVAILABLE");
-                return RoomStatus.AVAILABLE;
-            }
+        return String.format("Импорт комнат завершен: %d добавлено, %d обновлено. Ошибок: %d",
+                imported, updated, errors.size());
     }
-}
+
+    private RoomType parseRoomType(String typeStr) {
+        if (typeStr == null)
+            return RoomType.STANDARD;
+
+        switch (typeStr.toLowerCase().trim()) {
+            case "стандарт":
+            case "standard":
+                return RoomType.STANDARD;
+            case "бизнес":
+            case "business":
+                return RoomType.BUSINESS;
+            case "люкс":
+            case "luxury":
+                return RoomType.LUXURY;
+            default:
+                try {
+                    return RoomType.valueOf(typeStr.toUpperCase());
+                } catch (IllegalArgumentException e) {
+                    System.err.println("Неизвестный тип комнаты: " + typeStr + ", используем STANDARD");
+                    return RoomType.STANDARD;
+                }
+        }
+    }
+
+    private RoomStatus parseRoomStatus(String statusStr) {
+        if (statusStr == null)
+            return RoomStatus.AVAILABLE;
+
+        switch (statusStr.toLowerCase().trim()) {
+            case "доступен":
+            case "available":
+                return RoomStatus.AVAILABLE;
+            case "занят":
+            case "occupied":
+                return RoomStatus.OCCUPIED;
+            case "на ремонте":
+            case "under_maintenance":
+                return RoomStatus.UNDER_MAINTENANCE;
+            default:
+                try {
+                    return RoomStatus.valueOf(statusStr.toUpperCase());
+                } catch (IllegalArgumentException e) {
+                    System.err.println("Неизвестный статус комнаты: " + statusStr + ", используем AVAILABLE");
+                    return RoomStatus.AVAILABLE;
+                }
+        }
+    }
 }
