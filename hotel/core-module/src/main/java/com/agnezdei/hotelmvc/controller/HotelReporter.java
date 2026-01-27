@@ -4,8 +4,8 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.agnezdei.hotelmvc.annotations.Inject;
 import com.agnezdei.hotelmvc.model.Booking;
@@ -37,7 +37,7 @@ public class HotelReporter {
     @Inject
     private GuestServiceRepository guestServiceDAO;
 
-    private static final Logger logger = LogManager.getLogger(HotelReporter.class);
+    private static final Logger logger = LoggerFactory.getLogger(HotelReporter.class);
 
     public HotelReporter() {
     }

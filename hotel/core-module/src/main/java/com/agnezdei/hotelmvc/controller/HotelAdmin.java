@@ -5,8 +5,8 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.agnezdei.hotelmvc.annotations.Inject;
 import com.agnezdei.hotelmvc.config.AppConfig;
@@ -73,7 +73,7 @@ public class HotelAdmin {
     public HotelAdmin() {
     }
 
-    private static final Logger logger = LogManager.getLogger(HotelAdmin.class);
+   private static final Logger logger = LoggerFactory.getLogger(HotelAdmin.class);
 
     public String exportRoomsToCsv(String filePath) {
         logger.info("Начало экспорта номеров в файл: {}", filePath);
