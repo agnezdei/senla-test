@@ -21,128 +21,128 @@ public class ConsoleUI {
     private HotelReporter reporter;
     private Scanner scanner;
     private DateTimeFormatter dateFormatter;
-    
+
     public ConsoleUI() {
         this.scanner = new Scanner(System.in);
         this.dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     }
-    
+
     public void start() {
         System.out.println("=== СИСТЕМА УПРАВЛЕНИЯ ГОСТИНИЦЕЙ ===");
-        
+
         while (true) {
             MenuCommand.printMenu();
             int choice = scanner.nextInt();
             scanner.nextLine();
-            
+
             MenuCommand command = MenuCommand.fromCode(choice);
             if (command == null) {
                 System.out.println("Неверный выбор!");
                 continue;
             }
-            
+
             try {
                 switch (command) {
                     case EXIT:
                         System.out.println("Выход из системы...");
                         return;
-                        
+
                     case SETTLE_GUEST:
                         settleGuest();
                         break;
-                        
+
                     case EVICT_GUEST:
                         evictGuest();
                         break;
-                        
+
                     case SET_ROOM_MAINTENANCE:
                         setRoomMaintenance();
                         break;
-                        
+
                     case SET_ROOM_AVAILABLE:
                         setRoomAvailable();
                         break;
-                        
+
                     case CHANGE_ROOM_PRICE:
                         changeRoomPrice();
                         break;
-                        
+
                     case CHANGE_SERVICE_PRICE:
                         changeServicePrice();
                         break;
-                        
+
                     case ADD_ROOM:
                         addRoom();
                         break;
-                        
+
                     case ADD_SERVICE:
                         addService();
                         break;
-                        
+
                     case SHOW_ALL_ROOMS_PRICE:
                         showAllRoomsByPrice();
                         break;
-                        
+
                     case SHOW_ALL_ROOMS_CAPACITY:
                         showAllRoomsByCapacity();
                         break;
-                        
+
                     case SHOW_ALL_ROOMS_STARS:
                         showAllRoomsByStars();
                         break;
-                        
+
                     case SHOW_AVAILABLE_ROOMS_PRICE:
                         showAvailableRoomsByPrice();
                         break;
-                        
+
                     case SHOW_AVAILABLE_ROOMS_CAPACITY:
                         showAvailableRoomsByCapacity();
                         break;
-                        
+
                     case SHOW_AVAILABLE_ROOMS_STARS:
                         showAvailableRoomsByStars();
                         break;
-                        
+
                     case SHOW_GUESTS_NAME:
                         showGuestsByName();
                         break;
-                        
+
                     case SHOW_GUESTS_CHECKOUT:
                         showGuestsByCheckout();
                         break;
-                        
+
                     case SHOW_TOTAL_AVAILABLE:
                         showTotalAvailable();
                         break;
-                        
+
                     case SHOW_TOTAL_GUESTS:
                         showTotalGuests();
                         break;
-                        
+
                     case SHOW_ROOMS_BY_DATE:
                         showRoomsByDate();
                         break;
-                        
+
                     case SHOW_PAYMENT_AMOUNT:
                         showPaymentAmount();
                         break;
-                        
+
                     case SHOW_LAST_THREE_GUESTS:
                         showLastThreeGuests();
                         break;
-                        
+
                     case SHOW_GUEST_SERVICES_PRICE:
                         showGuestServicesByPrice();
                         break;
-                        
+
                     case SHOW_GUEST_SERVICES_DATE:
                         showGuestServicesByDate();
                         break;
-                        
+
                     case SHOW_PRICE_LIST:
                         showPriceList();
                         break;
-                        
+
                     case SHOW_ROOM_DETAILS:
                         showRoomDetails();
                         break;
@@ -185,64 +185,63 @@ public class ConsoleUI {
             }
         }
     }
-    
-    
+
     private void settleGuest() {
         try {
             System.out.print("Введите номер комнаты: ");
             String roomNumber = scanner.nextLine();
-            
+
             System.out.print("Введите имя гостя: ");
             String name = scanner.nextLine();
-            
+
             System.out.print("Введите номер паспорта: ");
             String passport = scanner.nextLine();
-            
+
             LocalDate checkIn = parseDate("Введите дату заселения (гггг-мм-дд): ");
             LocalDate checkOut = parseDate("Введите дату выселения (гггг-мм-дд): ");
-            
+
             Guest guest = new Guest();
             guest.setName(name);
             guest.setPassportNumber(passport);
-            
+
             String result = admin.settleGuest(roomNumber, guest, checkIn, checkOut);
             System.out.println(result);
-            
+
         } catch (EntityNotFoundException e) {
             System.out.println("Ошибка: " + e.getMessage());
         } catch (BusinessLogicException e) {
             System.out.println("Невозможно выполнить операцию: " + e.getMessage());
         }
     }
-    
+
     private void evictGuest() {
         try {
             System.out.print("Введите номер комнаты для выселения: ");
             String roomNumber = scanner.nextLine();
             String result = admin.evictGuest(roomNumber);
             System.out.println(result);
-            
+
         } catch (EntityNotFoundException e) {
             System.out.println("Ошибка: " + e.getMessage());
         } catch (BusinessLogicException e) {
             System.out.println("Невозможно выполнить операцию: " + e.getMessage());
         }
     }
-    
+
     private void setRoomMaintenance() {
         try {
             System.out.print("Введите номер комнаты для перевода на ремонт: ");
             String roomNumber = scanner.nextLine();
             String result = admin.setRoomUnderMaintenance(roomNumber);
             System.out.println(result);
-            
+
         } catch (EntityNotFoundException e) {
             System.out.println("Ошибка: " + e.getMessage());
         } catch (BusinessLogicException e) {
             System.out.println("Невозможно выполнить операцию: " + e.getMessage());
         }
     }
-    
+
     private void setRoomAvailable() {
         try {
             System.out.print("Введите номер комнаты для перевода в доступные: ");
@@ -260,11 +259,11 @@ public class ConsoleUI {
         try {
             System.out.print("Введите номер комнаты: ");
             String roomNumber = scanner.nextLine();
-            
+
             System.out.print("Введите новую цену: ");
             double newPrice = scanner.nextDouble();
             scanner.nextLine();
-            
+
             String result = admin.changeRoomPrice(roomNumber, newPrice);
             System.out.println(result);
         } catch (EntityNotFoundException e) {
@@ -273,16 +272,16 @@ public class ConsoleUI {
             System.out.println("Невозможно выполнить операцию: " + e.getMessage());
         }
     }
-    
+
     private void changeServicePrice() {
         try {
             System.out.print("Введите название услуги: ");
             String serviceName = scanner.nextLine();
-            
+
             System.out.print("Введите новую цену: ");
             double newPrice = scanner.nextDouble();
             scanner.nextLine();
-            
+
             String result = admin.changeServicePrice(serviceName, newPrice);
             System.out.println(result);
         } catch (EntityNotFoundException e) {
@@ -291,12 +290,12 @@ public class ConsoleUI {
             System.out.println("Невозможно выполнить операцию: " + e.getMessage());
         }
     }
-    
+
     private void addRoom() {
         try {
             System.out.print("Введите номер комнаты: ");
             String number = scanner.nextLine();
-            
+
             System.out.print("Введите тип (STANDARD/BUSINESS/LUXURY): ");
             String typeInput = scanner.nextLine().toUpperCase();
             RoomType type;
@@ -306,20 +305,20 @@ public class ConsoleUI {
                 System.out.println("Неверный тип комнаты. Доступные варианты: STANDARD, BUSINESS, LUXURY");
                 return;
             }
-            
+
             System.out.print("Введите цену: ");
             double price = Double.parseDouble(scanner.nextLine());
-            
+
             System.out.print("Введите вместимость: ");
             int capacity = Integer.parseInt(scanner.nextLine());
-            
+
             System.out.print("Введите количество звезд (1-5): ");
             int stars = Integer.parseInt(scanner.nextLine());
             if (stars < 1 || stars > 5) {
                 System.out.println("Количество звезд должно быть от 1 до 5");
                 return;
             }
-            
+
             String result = admin.addRoom(number, type, price, capacity, stars);
             System.out.println(result);
         } catch (BusinessLogicException e) {
@@ -328,15 +327,15 @@ public class ConsoleUI {
             System.out.println("Ошибка ввода числа: " + e.getMessage());
         }
     }
-    
+
     private void addService() {
         try {
             System.out.print("Введите название услуги: ");
             String name = scanner.nextLine();
-            
+
             System.out.print("Введите цену услуги: ");
             double price = Double.parseDouble(scanner.nextLine());
-            
+
             System.out.print("Введите категорию (FOOD/CLEANING/COMFORT): ");
             String categoryInput = scanner.nextLine().toUpperCase();
             ServiceCategory category;
@@ -346,7 +345,7 @@ public class ConsoleUI {
                 System.out.println("Неверная категория. Доступные варианты: FOOD, CLEANING, COMFORT");
                 return;
             }
-            
+
             String result = admin.addService(name, price, category);
             System.out.println(result);
         } catch (BusinessLogicException e) {
@@ -360,14 +359,14 @@ public class ConsoleUI {
         try {
             System.out.print("Введите номер паспорта: ");
             String passportNumber = scanner.nextLine();
-            
+
             System.out.print("Введите название услуги: ");
             String serviceName = scanner.nextLine();
-            
+
             System.out.print("Введите дату услуги (гггг-мм-дд): ");
             String dateInput = scanner.nextLine();
             LocalDate serviceDate = LocalDate.parse(dateInput, dateFormatter);
-            
+
             String result = admin.addServiceToGuest(passportNumber, serviceName, serviceDate);
             System.out.println(result);
         } catch (EntityNotFoundException e) {
@@ -382,45 +381,45 @@ public class ConsoleUI {
     private void showAllRoomsByPrice() {
         reporter.printAllRoomsSortedByPrice();
     }
-    
+
     private void showAllRoomsByCapacity() {
         reporter.printAllRoomsSortedByCapacity();
     }
-    
+
     private void showAllRoomsByStars() {
         reporter.printAllRoomsSortedByStars();
     }
-    
+
     private void showAvailableRoomsByPrice() {
         reporter.printAvailableRoomsSortedByPrice();
     }
-    
+
     private void showAvailableRoomsByCapacity() {
         reporter.printAvailableRoomsSortedByCapacity();
     }
-    
+
     private void showAvailableRoomsByStars() {
         reporter.printAvailableRoomsSortedByStars();
     }
-    
+
     private void showGuestsByName() {
         reporter.printGuestsSortedByName();
     }
-    
+
     private void showGuestsByCheckout() {
         reporter.printGuestsSortedByCheckoutDate();
     }
-    
+
     private void showTotalAvailable() {
         int count = reporter.getTotalAvailableRooms();
         System.out.println("\nОбщее число свободных номеров: " + count);
     }
-    
+
     private void showTotalGuests() {
         int count = reporter.getTotalGuests();
         System.out.println("\nОбщее число постояльцев: " + count);
     }
-    
+
     private void showRoomsByDate() {
         System.out.print("Введите дату для проверки (гггг-мм-дд): ");
         String dateInput = scanner.nextLine();
@@ -431,46 +430,46 @@ public class ConsoleUI {
             System.out.println("Ошибка формата даты. Используйте гггг-мм-дд");
         }
     }
-    
+
     private void showPaymentAmount() {
         System.out.print("Введите номер комнаты для расчета оплаты: ");
         String roomNumber = scanner.nextLine();
-        
+
         reporter.getPaymentForRoom(roomNumber);
     }
-    
+
     private void showLastThreeGuests() {
         System.out.print("Введите номер комнаты: ");
         String roomNumber = scanner.nextLine();
-        
+
         System.out.println("\n=== 3 ПОСЛЕДНИХ ПОСТОЯЛЬЦА НОМЕРА " + roomNumber + " ===");
         var lastThree = reporter.getLastThreeGuestsOfRoom(roomNumber);
         if (lastThree.isEmpty()) {
             System.out.println("Нет истории бронирований для этого номера");
         } else {
             for (var booking : lastThree) {
-                System.out.println("• " + booking.getGuest().getName() + 
-                                 " (" + booking.getCheckInDate() + " - " + booking.getCheckOutDate() + ")");
+                System.out.println("• " + booking.getGuest().getName() +
+                        " (" + booking.getCheckInDate() + " - " + booking.getCheckOutDate() + ")");
             }
         }
     }
-    
+
     private void showGuestServicesByPrice() {
         System.out.print("Введите имя гостя: ");
         String guestName = scanner.nextLine();
         reporter.printGuestServicesSortedByPrice(guestName);
     }
-    
+
     private void showGuestServicesByDate() {
         System.out.print("Введите имя гостя: ");
         String guestName = scanner.nextLine();
         reporter.printGuestServicesSortedByDate(guestName);
     }
-    
+
     private void showPriceList() {
         reporter.printPriceListSortedByCategoryAndPrice();
     }
-    
+
     private void showRoomDetails() {
         System.out.print("Введите номер комнаты: ");
         String roomNumber = scanner.nextLine();

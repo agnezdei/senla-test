@@ -10,14 +10,14 @@ public enum MenuCommand {
     CHANGE_SERVICE_PRICE(6, "Изменить цену услуги"),
     ADD_ROOM(7, "Добавить номер"),
     ADD_SERVICE(8, "Добавить услугу"),
-    
+
     SHOW_ALL_ROOMS_PRICE(9, "Все номера (по цене)"),
     SHOW_ALL_ROOMS_CAPACITY(10, "Все номера (по вместимости)"),
     SHOW_ALL_ROOMS_STARS(11, "Все номера (по звездам)"),
     SHOW_AVAILABLE_ROOMS_PRICE(12, "Свободные номера (по цене)"),
     SHOW_AVAILABLE_ROOMS_CAPACITY(13, "Свободные номера (по вместимости)"),
     SHOW_AVAILABLE_ROOMS_STARS(14, "Свободные номера (по звездам)"),
-    
+
     SHOW_GUESTS_NAME(15, "Постояльцы (по имени)"),
     SHOW_GUESTS_CHECKOUT(16, "Постояльцы (по дате выезда)"),
     SHOW_TOTAL_AVAILABLE(17, "Общее число свободных номеров"),
@@ -25,7 +25,7 @@ public enum MenuCommand {
     SHOW_ROOMS_BY_DATE(19, "Номера свободные на дату"),
     SHOW_PAYMENT_AMOUNT(20, "Сумма оплаты для гостя"),
     SHOW_LAST_THREE_GUESTS(21, "3 последних постояльца номера"),
-    
+
     SHOW_GUEST_SERVICES_PRICE(22, "Услуги гостя (по цене)"),
     SHOW_GUEST_SERVICES_DATE(23, "Услуги гостя (по дате)"),
     SHOW_PRICE_LIST(24, "Прайс-лист"),
@@ -70,28 +70,28 @@ public enum MenuCommand {
 
     public static void printMenu() {
         System.out.println("\n=== ГЛАВНОЕ МЕНЮ ===");
-        
+
         System.out.println("\n--- УПРАВЛЕНИЕ ---");
         for (MenuCommand command : values()) {
             if (command.getCode() >= 1 && command.getCode() <= 8) {
                 System.out.println(command.getCode() + ". " + command.getDescription());
             }
         }
-        
+
         System.out.println("\n--- ОТЧЕТЫ: НОМЕРА ---");
         for (MenuCommand command : values()) {
             if (command.getCode() >= 9 && command.getCode() <= 14) {
                 System.out.println(command.getCode() + ". " + command.getDescription());
             }
         }
-        
+
         System.out.println("\n--- ОТЧЕТЫ: ГОСТИ ---");
         for (MenuCommand command : values()) {
             if (command.getCode() >= 15 && command.getCode() <= 21) {
                 System.out.println(command.getCode() + ". " + command.getDescription());
             }
         }
-        
+
         System.out.println("\n--- ОТЧЕТЫ: УСЛУГИ ---");
         for (MenuCommand command : values()) {
             if (command.getCode() >= 22 && command.getCode() <= 25) {
@@ -105,7 +105,7 @@ public enum MenuCommand {
                 System.out.println(command.getCode() + ". " + command.getDescription());
             }
         }
-        
+
         System.out.println("\n0. Выход");
         System.out.print("Выберите действие: ");
     }

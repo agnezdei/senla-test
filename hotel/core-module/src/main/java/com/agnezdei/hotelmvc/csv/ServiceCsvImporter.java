@@ -26,7 +26,7 @@ public class ServiceCsvImporter {
 
         try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
             String line = reader.readLine();
-            
+
             while ((line = reader.readLine()) != null) {
                 try {
                     String[] data = line.split(",");
@@ -39,8 +39,8 @@ public class ServiceCsvImporter {
                     double price = Double.parseDouble(data[1]);
                     ServiceCategory category = parseServiceCategory(data[2]);
 
-                    Optional<Service>  existingService = serviceDAO.findByName(name);
-                    
+                    Optional<Service> existingService = serviceDAO.findByName(name);
+
                     if (existingService.isPresent()) {
                         Service service = existingService.get();
                         service.setPrice(price);
@@ -56,40 +56,41 @@ public class ServiceCsvImporter {
                         serviceDAO.save(service);
                         imported++;
                     }
-                    
+
                 } catch (Exception e) {
                     errors.add("Ошибка в строке: " + line + " - " + e.getMessage());
                 }
             }
-            
+
         } catch (IOException e) {
             return "Ошибка чтения файла: " + e.getMessage();
         }
 
-        return String.format("Импорт услуг завершен: %d добавлено, %d обновлено. Ошибок: %d", 
-                            imported, updated, errors.size());
+        return String.format("Импорт услуг завершен: %d добавлено, %d обновлено. Ошибок: %d",
+                imported, updated, errors.size());
     }
-    
-private ServiceCategory parseServiceCategory(String categoryStr) {
-    if (categoryStr == null) return ServiceCategory.COMFORT;
-    
-    switch (categoryStr.toLowerCase().trim()) {
-        case "питание":
-        case "food":
-            return ServiceCategory.FOOD;
-        case "обслуживание":
-        case "cleaning":
-            return ServiceCategory.CLEANING;
-        case "комфорт":
-        case "comfort":
+
+    private ServiceCategory parseServiceCategory(String categoryStr) {
+        if (categoryStr == null)
             return ServiceCategory.COMFORT;
-        default:
-            try {
-                return ServiceCategory.valueOf(categoryStr.toUpperCase());
-            } catch (IllegalArgumentException e) {
-                System.err.println("Неизвестная категория услуги: " + categoryStr + ", используем COMFORT");
+
+        switch (categoryStr.toLowerCase().trim()) {
+            case "питание":
+            case "food":
+                return ServiceCategory.FOOD;
+            case "обслуживание":
+            case "cleaning":
+                return ServiceCategory.CLEANING;
+            case "комфорт":
+            case "comfort":
                 return ServiceCategory.COMFORT;
-            }
+            default:
+                try {
+                    return ServiceCategory.valueOf(categoryStr.toUpperCase());
+                } catch (IllegalArgumentException e) {
+                    System.err.println("Неизвестная категория услуги: " + categoryStr + ", используем COMFORT");
+                    return ServiceCategory.COMFORT;
+                }
+        }
     }
-}
 }
