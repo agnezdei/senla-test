@@ -17,7 +17,7 @@ import com.agnezdei.hotelmvc.model.Guest;
 import com.agnezdei.hotelmvc.model.Room;
 import com.agnezdei.hotelmvc.model.RoomStatus;
 import com.agnezdei.hotelmvc.model.RoomType;
-import com.agnezdei.hotelmvc.repository.GenericDAO;
+import com.agnezdei.hotelmvc.repository.dao.GenericDAO;
 
 public class BookingRepository extends BaseRepository implements GenericDAO<Booking, Long> {
     

@@ -16,7 +16,7 @@ import com.agnezdei.hotelmvc.model.Guest;
 import com.agnezdei.hotelmvc.model.GuestService;
 import com.agnezdei.hotelmvc.model.Service;
 import com.agnezdei.hotelmvc.model.ServiceCategory;
-import com.agnezdei.hotelmvc.repository.GenericDAO;
+import com.agnezdei.hotelmvc.repository.dao.GenericDAO;
 
 public class GuestServiceRepository extends BaseRepository implements GenericDAO<GuestService, Long> {
     

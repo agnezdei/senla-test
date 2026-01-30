@@ -13,7 +13,7 @@ import com.agnezdei.hotelmvc.config.DatabaseConfig;
 import com.agnezdei.hotelmvc.exceptions.DAOException;
 import com.agnezdei.hotelmvc.model.Service;
 import com.agnezdei.hotelmvc.model.ServiceCategory;
-import com.agnezdei.hotelmvc.repository.GenericDAO;
+import com.agnezdei.hotelmvc.repository.dao.GenericDAO;
 
 public class ServiceRepository extends BaseRepository implements GenericDAO<Service, Long> {
 

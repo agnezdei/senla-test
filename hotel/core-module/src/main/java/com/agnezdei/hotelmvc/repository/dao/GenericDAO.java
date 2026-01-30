@@ -1,4 +1,4 @@
-package com.agnezdei.hotelmvc.repository;
+package com.agnezdei.hotelmvc.repository.dao;
 
 import java.util.List;
 import java.util.Optional;

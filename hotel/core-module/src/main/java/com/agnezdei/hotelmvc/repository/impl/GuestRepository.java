@@ -12,7 +12,7 @@ import java.util.Optional;
 import com.agnezdei.hotelmvc.config.DatabaseConfig;
 import com.agnezdei.hotelmvc.exceptions.DAOException;
 import com.agnezdei.hotelmvc.model.Guest;
-import com.agnezdei.hotelmvc.repository.GenericDAO;
+import com.agnezdei.hotelmvc.repository.dao.GenericDAO;
 
 public class GuestRepository extends BaseRepository implements GenericDAO<Guest, Long> {
 
