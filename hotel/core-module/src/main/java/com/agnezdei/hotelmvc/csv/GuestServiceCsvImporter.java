@@ -12,17 +12,17 @@ import com.agnezdei.hotelmvc.annotations.Inject;
 import com.agnezdei.hotelmvc.model.Guest;
 import com.agnezdei.hotelmvc.model.GuestService;
 import com.agnezdei.hotelmvc.model.Service;
-import com.agnezdei.hotelmvc.repository.impl.GuestRepository;
-import com.agnezdei.hotelmvc.repository.impl.GuestServiceRepository;
-import com.agnezdei.hotelmvc.repository.impl.ServiceRepository;
+import com.agnezdei.hotelmvc.repository.GuestDAO;
+import com.agnezdei.hotelmvc.repository.GuestServiceDAO;
+import com.agnezdei.hotelmvc.repository.ServiceDAO;
 
 public class GuestServiceCsvImporter {
     @Inject
-    private GuestServiceRepository guestServiceDAO;
+    private GuestServiceDAO guestServiceDAO;
     @Inject
-    private GuestRepository guestDAO;
+    private GuestDAO guestDAO;
     @Inject
-    private ServiceRepository serviceDAO;
+    private ServiceDAO serviceDAO;
 
     public GuestServiceCsvImporter() {
     }

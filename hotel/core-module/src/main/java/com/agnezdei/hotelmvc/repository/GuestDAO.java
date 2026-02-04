@@ -1,4 +1,4 @@
-package com.agnezdei.hotelmvc.repository.dao;
+package com.agnezdei.hotelmvc.repository;
 
 import java.util.List;
 import java.util.Optional;
@@ -6,9 +6,8 @@ import java.util.Optional;
 import org.hibernate.Query;
 import org.hibernate.Session;
 
-import com.agnezdei.hotelmvc.dto.GuestDTO;
-import com.agnezdei.hotelmvc.entity.Guest;
 import com.agnezdei.hotelmvc.exceptions.DAOException;
+import com.agnezdei.hotelmvc.model.Guest;
 import com.agnezdei.hotelmvc.util.HibernateUtil;
 
 public class GuestDAO extends AbstractHibernateDAO<Guest, Long> {
@@ -34,13 +33,13 @@ public class GuestDAO extends AbstractHibernateDAO<Guest, Long> {
             }
         }
     }
-    
+
     public List<Guest> findGuestsWithActiveBookings() throws DAOException {
         Session session = null;
         try {
             session = HibernateUtil.openSession();
             String hql = "SELECT DISTINCT g FROM Guest g " +
-                        "JOIN g.bookings b " +
+                        "LEFT JOIN FETCH g.bookings b " +
                         "WHERE b.isActive = true";
             Query query = session.createQuery(hql);
             @SuppressWarnings("unchecked")
@@ -67,49 +66,6 @@ public class GuestDAO extends AbstractHibernateDAO<Guest, Long> {
             return count != null ? count.intValue() : 0;
         } catch (Exception e) {
             throw new DAOException("Ошибка при подсчете активных гостей", e);
-        } finally {
-            if (session != null && session.isOpen()) {
-                session.close();
-            }
-        }
-    }
-
-    public Optional<GuestDTO> findByPassportNumberDTO(String passportNumber) throws DAOException {
-        Session session = null;
-        try {
-            session = HibernateUtil.openSession();
-            String hql = "SELECT NEW com.agnezdei.hotelmvc.dto.GuestDTO(" +
-                        "g.id, g.name, g.passportNumber) " +
-                        "FROM Guest g " +
-                        "WHERE g.passportNumber = :passportNumber";
-            Query query = session.createQuery(hql);
-            query.setParameter("passportNumber", passportNumber);
-            GuestDTO guestDTO = (GuestDTO) query.uniqueResult();
-            return Optional.ofNullable(guestDTO);
-        } catch (Exception e) {
-            throw new DAOException("Ошибка при поиске гостя (DTO) по номеру паспорта: " + passportNumber, e);
-        } finally {
-            if (session != null && session.isOpen()) {
-                session.close();
-            }
-        }
-    }
-    
-    public List<GuestDTO> findGuestsWithActiveBookingsDTO() throws DAOException {
-        Session session = null;
-        try {
-            session = HibernateUtil.openSession();
-            String hql = "SELECT DISTINCT NEW com.agnezdei.hotelmvc.dto.GuestDTO(" +
-                        "g.id, g.name, g.passportNumber) " +
-                        "FROM Guest g " +
-                        "JOIN g.bookings b " +
-                        "WHERE b.isActive = true";
-            Query query = session.createQuery(hql);
-            @SuppressWarnings("unchecked")
-            List<GuestDTO> result = query.list();
-            return result;
-        } catch (Exception e) {
-            throw new DAOException("Ошибка при получении гостей (DTO) с активными бронированиями", e);
         } finally {
             if (session != null && session.isOpen()) {
                 session.close();

@@ -9,11 +9,11 @@ import java.util.Optional;
 
 import com.agnezdei.hotelmvc.annotations.Inject;
 import com.agnezdei.hotelmvc.model.Guest;
-import com.agnezdei.hotelmvc.repository.impl.GuestRepository;
+import com.agnezdei.hotelmvc.repository.GuestDAO;
 
 public class GuestCsvImporter {
     @Inject
-    private GuestRepository guestDAO;
+    private GuestDAO guestDAO;
 
     public GuestCsvImporter() {
     }

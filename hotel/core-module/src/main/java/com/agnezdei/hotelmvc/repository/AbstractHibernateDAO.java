@@ -1,4 +1,4 @@
-package com.agnezdei.hotelmvc.repository.dao;
+package com.agnezdei.hotelmvc.repository;
 
 import java.io.Serializable;
 import java.lang.reflect.ParameterizedType;

@@ -10,11 +10,11 @@ import java.util.Optional;
 import com.agnezdei.hotelmvc.annotations.Inject;
 import com.agnezdei.hotelmvc.model.Service;
 import com.agnezdei.hotelmvc.model.ServiceCategory;
-import com.agnezdei.hotelmvc.repository.impl.ServiceRepository;
+import com.agnezdei.hotelmvc.repository.ServiceDAO;
 
 public class ServiceCsvImporter {
     @Inject
-    private ServiceRepository serviceDAO;
+    private ServiceDAO serviceDAO;
 
     public ServiceCsvImporter() {
     }

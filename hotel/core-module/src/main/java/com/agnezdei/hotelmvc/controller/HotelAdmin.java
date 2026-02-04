@@ -16,9 +16,19 @@ import com.agnezdei.hotelmvc.csv.GuestCsvImporter;
 import com.agnezdei.hotelmvc.csv.GuestServiceCsvImporter;
 import com.agnezdei.hotelmvc.csv.RoomCsvImporter;
 import com.agnezdei.hotelmvc.csv.ServiceCsvImporter;
+import com.agnezdei.hotelmvc.dto.BookingDTO;
+import com.agnezdei.hotelmvc.dto.GuestDTO;
+import com.agnezdei.hotelmvc.dto.GuestServiceDTO;
+import com.agnezdei.hotelmvc.dto.RoomDTO;
+import com.agnezdei.hotelmvc.dto.ServiceDTO;
 import com.agnezdei.hotelmvc.exceptions.BusinessLogicException;
 import com.agnezdei.hotelmvc.exceptions.DAOException;
 import com.agnezdei.hotelmvc.exceptions.EntityNotFoundException;
+import com.agnezdei.hotelmvc.mapper.BookingMapper;
+import com.agnezdei.hotelmvc.mapper.GuestMapper;
+import com.agnezdei.hotelmvc.mapper.GuestServiceMapper;
+import com.agnezdei.hotelmvc.mapper.RoomMapper;
+import com.agnezdei.hotelmvc.mapper.ServiceMapper;
 import com.agnezdei.hotelmvc.model.Booking;
 import com.agnezdei.hotelmvc.model.Guest;
 import com.agnezdei.hotelmvc.model.GuestService;
@@ -27,27 +37,27 @@ import com.agnezdei.hotelmvc.model.RoomStatus;
 import com.agnezdei.hotelmvc.model.RoomType;
 import com.agnezdei.hotelmvc.model.Service;
 import com.agnezdei.hotelmvc.model.ServiceCategory;
-import com.agnezdei.hotelmvc.repository.impl.BookingRepository;
-import com.agnezdei.hotelmvc.repository.impl.GuestRepository;
-import com.agnezdei.hotelmvc.repository.impl.GuestServiceRepository;
-import com.agnezdei.hotelmvc.repository.impl.RoomRepository;
-import com.agnezdei.hotelmvc.repository.impl.ServiceRepository;
+import com.agnezdei.hotelmvc.repository.BookingDAO;
+import com.agnezdei.hotelmvc.repository.GuestDAO;
+import com.agnezdei.hotelmvc.repository.GuestServiceDAO;
+import com.agnezdei.hotelmvc.repository.RoomDAO;
+import com.agnezdei.hotelmvc.repository.ServiceDAO;
 
 public class HotelAdmin {
     @Inject
-    private RoomRepository roomDAO;
+    private RoomDAO roomDAO;
 
     @Inject
-    private GuestRepository guestDAO;
+    private GuestDAO guestDAO;
 
     @Inject
-    private ServiceRepository serviceDAO;
+    private ServiceDAO serviceDAO;
 
     @Inject
-    private BookingRepository bookingDAO;
+    private BookingDAO bookingDAO;
 
     @Inject
-    private GuestServiceRepository guestServiceDAO;
+    private GuestServiceDAO guestServiceDAO;
 
     @Inject
     private AppConfig config;
@@ -73,13 +83,14 @@ public class HotelAdmin {
     public HotelAdmin() {
     }
 
-   private static final Logger logger = LoggerFactory.getLogger(HotelAdmin.class);
+    private static final Logger logger = LoggerFactory.getLogger(HotelAdmin.class);
 
     public String exportRoomsToCsv(String filePath) {
         logger.info("Начало экспорта номеров в файл: {}", filePath);
         try {
             List<Room> rooms = roomDAO.findAll();
-            csvExporter.exportRooms(rooms, filePath);
+            List<RoomDTO> roomDTOs = RoomMapper.toDTOList(rooms);
+            csvExporter.exportRooms(roomDTOs, filePath);
             String result = "Успех: Номера экспортированы в " + filePath;
             logger.info(result);
             return result;
@@ -96,7 +107,8 @@ public class HotelAdmin {
         logger.info("Начало экспорта услуг в файл: {}", filePath);
         try {
             List<Service> services = serviceDAO.findAll();
-            csvExporter.exportServices(services, filePath);
+            List<ServiceDTO> serviceDTOs = ServiceMapper.toDTOList(services);
+            csvExporter.exportServices(serviceDTOs, filePath);
             String result = "Успех: Услуги экспортированы в " + filePath;
             logger.info(result);
             return result;
@@ -113,7 +125,8 @@ public class HotelAdmin {
         logger.info("Начало экспорта гостей в файл: {}", filePath);
         try {
             List<Guest> guests = guestDAO.findAll();
-            csvExporter.exportGuests(guests, filePath);
+            List<GuestDTO> guestDTOs = GuestMapper.toDTOList(guests);
+            csvExporter.exportGuests(guestDTOs, filePath);
             String result = "Успех: Гости экспортированы в " + filePath;
             logger.info(result);
             return result;
@@ -130,7 +143,8 @@ public class HotelAdmin {
         logger.info("Начало экспорта бронирований в файл: {}", filePath);
         try {
             List<Booking> bookings = bookingDAO.findAll();
-            csvExporter.exportBookings(bookings, filePath);
+            List<BookingDTO> bookingDTOs = BookingMapper.toDTOList(bookings);
+            csvExporter.exportBookings(bookingDTOs, filePath);
             String result = "Успех: Бронирования экспортированы в " + filePath;
             logger.info(result);
             return result;
@@ -147,8 +161,9 @@ public class HotelAdmin {
         logger.info("Начало экспорта услуг гостей в файл: {}", filePath);
         try {
             List<GuestService> guestServices = guestServiceDAO.findAll();
-            csvExporter.exportGuestServices(guestServices, filePath);
-            String result = "Успех: Гости экспортированы в " + filePath;
+            List<GuestServiceDTO> guestServiceDTOs = GuestServiceMapper.toDTOList(guestServices);
+            csvExporter.exportGuestServices(guestServiceDTOs, filePath);
+            String result = "Успех: Услуги гостей экспортированы в " + filePath;
             logger.info(result);
             return result;
         } catch (DAOException e) {
@@ -272,11 +287,7 @@ public class HotelAdmin {
                 logger.info("Создан новый гость: {}", guest.getPassportNumber());
             }
 
-            Booking booking = new Booking();
-            booking.setGuest(savedGuest);
-            booking.setRoom(room);
-            booking.setCheckInDate(checkInDate);
-            booking.setCheckOutDate(checkOutDate);
+            Booking booking = new Booking(savedGuest, room, checkInDate, checkOutDate);
             booking.setActive(true);
 
             Booking savedBooking = bookingDAO.save(booking);
@@ -374,11 +385,8 @@ public class HotelAdmin {
             Guest guest = guestOpt.get();
             Service service = serviceOpt.get();
 
-            GuestService guestService = new GuestService();
-            guestService.setGuest(guest);
-            guestService.setService(service);
-            guestService.setServiceDate(serviceDate);
-
+            GuestService guestService = new GuestService(guest, service, serviceDate);
+            
             guestServiceDAO.save(guestService);
 
             String result = "Успех: Услуга '" + serviceName + "' добавлена гостю " + guest.getName();
@@ -568,12 +576,7 @@ public class HotelAdmin {
                 throw new BusinessLogicException(errorMsg);
             }
 
-            Room room = new Room();
-            room.setNumber(number);
-            room.setType(type);
-            room.setPrice(price);
-            room.setCapacity(capacity);
-            room.setStars(stars);
+            Room room = new Room(number, type, price, capacity, stars);
             room.setStatus(RoomStatus.AVAILABLE);
 
             roomDAO.save(room);
@@ -603,10 +606,7 @@ public class HotelAdmin {
                 throw new BusinessLogicException(errorMsg);
             }
 
-            Service service = new Service();
-            service.setName(name);
-            service.setPrice(price);
-            service.setCategory(category);
+            Service service = new Service(name, price, category);
 
             serviceDAO.save(service);
 
@@ -621,15 +621,28 @@ public class HotelAdmin {
         }
     }
 
-    public List<GuestService> getGuestServices(Long guestId) throws BusinessLogicException {
+    public List<GuestServiceDTO> getGuestServices(Long guestId) throws BusinessLogicException {
         logger.info("Начало получения услуг гостя: ID={}", guestId);
 
         try {
             List<GuestService> services = guestServiceDAO.findByGuestId(guestId);
             logger.info("Получено услуг для гостя ID={}: {}", guestId, services.size());
-            return services;
+            return GuestServiceMapper.toDTOList(services);
         } catch (DAOException e) {
             logger.error("Ошибка базы данных при получении услуг гостя: {}", e.getMessage(), e);
+            throw new BusinessLogicException("Ошибка базы данных: " + e.getMessage());
+        }
+    }
+
+    public List<GuestServiceDTO> getGuestServicesByName(String guestName) throws BusinessLogicException {
+        logger.info("Начало получения услуг гостя по имени: {}", guestName);
+
+        try {
+            List<GuestService> services = guestServiceDAO.findByGuestNameOrderedByDate(guestName);
+            logger.info("Получено услуг для гостя {}: {}", guestName, services.size());
+            return GuestServiceMapper.toDTOList(services);
+        } catch (DAOException e) {
+            logger.error("Ошибка базы данных при получении услуг гостя по имени: {}", e.getMessage(), e);
             throw new BusinessLogicException("Ошибка базы данных: " + e.getMessage());
         }
     }

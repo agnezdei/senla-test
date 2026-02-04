@@ -1,4 +1,4 @@
-package com.agnezdei.hotelmvc.repository.dao;
+package com.agnezdei.hotelmvc.repository;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -7,9 +7,9 @@ import java.util.Optional;
 import org.hibernate.Query;
 import org.hibernate.Session;
 
-import com.agnezdei.hotelmvc.entity.Room;
-import com.agnezdei.hotelmvc.entity.RoomStatus;
 import com.agnezdei.hotelmvc.exceptions.DAOException;
+import com.agnezdei.hotelmvc.model.Room;
+import com.agnezdei.hotelmvc.model.RoomStatus;
 import com.agnezdei.hotelmvc.util.HibernateUtil;
 
 public class RoomDAO extends AbstractHibernateDAO<Room, Long> {

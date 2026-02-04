@@ -1,3 +1,4 @@
+
 package com.agnezdei.hotelmvc.util;
 
 import org.hibernate.HibernateException;
@@ -6,11 +7,12 @@ import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.hibernate.cfg.AnnotationConfiguration;
 
-import com.agnezdei.hotelmvc.entity.Booking;
-import com.agnezdei.hotelmvc.entity.Guest;
-import com.agnezdei.hotelmvc.entity.GuestService;
-import com.agnezdei.hotelmvc.entity.Room;
-import com.agnezdei.hotelmvc.entity.Service;
+import com.agnezdei.hotelmvc.model.Booking;
+import com.agnezdei.hotelmvc.model.Guest;
+import com.agnezdei.hotelmvc.model.GuestService;
+import com.agnezdei.hotelmvc.model.Room;
+import com.agnezdei.hotelmvc.model.Service;
+
 
 public class HibernateUtil {
     private static final SessionFactory sessionFactory;
@@ -18,7 +20,7 @@ public class HibernateUtil {
     static {
         try {
             sessionFactory = new AnnotationConfiguration()
-                .addPackage("com.agnezdei.hotelmvc.entity")
+                .addPackage("com.agnezdei.hotelmvc.model")
                 .addAnnotatedClass(Guest.class)
                 .addAnnotatedClass(Room.class)
                 .addAnnotatedClass(Service.class)

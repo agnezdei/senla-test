@@ -11,11 +11,11 @@ import com.agnezdei.hotelmvc.annotations.Inject;
 import com.agnezdei.hotelmvc.model.Room;
 import com.agnezdei.hotelmvc.model.RoomStatus;
 import com.agnezdei.hotelmvc.model.RoomType;
-import com.agnezdei.hotelmvc.repository.impl.RoomRepository;
+import com.agnezdei.hotelmvc.repository.RoomDAO;
 
 public class RoomCsvImporter {
     @Inject
-    private RoomRepository roomDAO;
+    private RoomDAO roomDAO;
 
     public RoomCsvImporter() {
     }
