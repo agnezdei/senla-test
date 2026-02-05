@@ -96,4 +96,22 @@ public class ServiceDAO extends AbstractHibernateDAO<Service, Long> {
             }
         }
     }
+
+    public List<Service> findAll() throws DAOException {
+        Session session = null;
+        try {
+            session = HibernateUtil.openSession();
+            String hql = "FROM Service s ORDER BY s.name";
+            Query query = session.createQuery(hql);
+            @SuppressWarnings("unchecked")
+            List<Service> result = query.list();
+            return result;
+        } catch (Exception e) {
+            throw new DAOException("Ошибка при получении всех услуг", e);
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
+        }
+    }
 }

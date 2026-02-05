@@ -1,6 +1,6 @@
 -- 1. Таблица гостей
 CREATE TABLE IF NOT EXISTS guest (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     passport_number VARCHAR(50) UNIQUE NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS guest (
 
 -- 2. Таблица номеров
 CREATE TABLE IF NOT EXISTS room (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id SERIAL PRIMARY KEY,
     number VARCHAR(10) NOT NULL UNIQUE,
     type VARCHAR(20) NOT NULL,  -- STANDARD, DELUXE, LUXURY
     status VARCHAR(20) NOT NULL DEFAULT 'AVAILABLE',  -- AVAILABLE, OCCUPIED, UNDER MAINTENANCE
@@ -16,45 +16,45 @@ CREATE TABLE IF NOT EXISTS room (
     capacity INTEGER NOT NULL,
     stars INTEGER CHECK (stars BETWEEN 1 AND 5),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CHECK (price > 0),
-    CHECK (capacity > 0)
+    CONSTRAINT price_positive CHECK (price > 0),
+    CONSTRAINT capacity_positive CHECK (capacity > 0)
 );
 
 -- 3. Таблица услуг
 CREATE TABLE IF NOT EXISTS service (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     price DECIMAL(10, 2) NOT NULL,
     category VARCHAR(20) NOT NULL,  -- FOOD, CLEANING, COMFORT
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CHECK (price >= 0)
+    CONSTRAINT service_price_non_negative CHECK (price >= 0)
 );
 
 -- 4. Таблица бронирований
 CREATE TABLE IF NOT EXISTS booking (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id SERIAL PRIMARY KEY,
     guest_id INTEGER NOT NULL,
     room_id INTEGER NOT NULL,
-    check_in_date TEXT NOT NULL,
-    check_out_date TEXT NOT NULL,
+    check_in_date DATE NOT NULL,
+    check_out_date DATE NOT NULL,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (guest_id) REFERENCES guest(id) ON DELETE CASCADE,
     FOREIGN KEY (room_id) REFERENCES room(id) ON DELETE RESTRICT,
-    CHECK (check_out_date > check_in_date)
+    CONSTRAINT valid_dates CHECK (check_out_date > check_in_date)
 );
 
 -- 5. Таблица guest_service
 CREATE TABLE IF NOT EXISTS guest_service (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id SERIAL PRIMARY KEY,
     guest_id INTEGER NOT NULL,
     service_id INTEGER NOT NULL,
-    service_date TEXT NOT NULL,
+    service_date DATE NOT NULL,
     
     FOREIGN KEY (guest_id) REFERENCES guest(id) ON DELETE CASCADE,
     FOREIGN KEY (service_id) REFERENCES service(id) ON DELETE RESTRICT,
     
-    UNIQUE(guest_id, service_id, service_date)
+    CONSTRAINT unique_service_per_day UNIQUE(guest_id, service_id, service_date)
 );
 
 -- Индексы

@@ -7,9 +7,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import org.hibernate.Session;
+import org.hibernate.Transaction;
+
 import com.agnezdei.hotelmvc.annotations.Inject;
 import com.agnezdei.hotelmvc.model.Guest;
 import com.agnezdei.hotelmvc.repository.GuestDAO;
+import com.agnezdei.hotelmvc.util.HibernateUtil;
 
 public class GuestCsvImporter {
     @Inject
@@ -19,65 +23,67 @@ public class GuestCsvImporter {
     }
 
     public String importGuests(String filePath) {
+        Session session = null;
+        Transaction transaction = null;
+        try {
+            session = HibernateUtil.openSession();
+            transaction = session.beginTransaction();
+            
+            String result = importGuests(filePath, session);
+            
+            transaction.commit();
+            return result;
+        } catch (Exception e) {
+            if (transaction != null) transaction.rollback();
+            return "Ошибка при импорте гостей: " + e.getMessage();
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
+        }
+    }
+
+    public String importGuests(String filePath, Session session) {
         List<String> errors = new ArrayList<>();
         int imported = 0;
         int updated = 0;
 
-        System.out.println("=== Начало импорта гостей ===");
-
         try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
             String line = reader.readLine();
-            System.out.println("Заголовок: " + line);
 
             int lineNum = 1;
             while ((line = reader.readLine()) != null) {
                 lineNum++;
-                System.out.println("Строка " + lineNum + ": " + line);
-
                 try {
                     String[] data = line.split(",");
-                    System.out.println("Количество полей: " + data.length);
-
                     if (data.length < 2) {
-                        String error = "Строка " + lineNum + ": Недостаточно данных";
-                        errors.add(error);
-                        System.out.println("ОШИБКА: " + error);
+                        errors.add("Строка " + lineNum + ": Недостаточно данных");
                         continue;
                     }
 
                     String name = data[0].trim();
                     String passportNumber = data[1].trim();
 
-                    System.out.println("Парсинг: имя='" + name + "', паспорт='" + passportNumber + "'");
-
-                    // Ищем гостя по паспорту
-                    Optional<Guest> existingGuest = guestDAO.findByPassportNumber(passportNumber);
+                    Optional<Guest> existingGuest = guestDAO.findByPassportNumber(passportNumber, session);
 
                     if (existingGuest.isPresent()) {
-                        System.out.println("Гость с паспортом " + passportNumber + " уже существует");
                         Guest guest = existingGuest.get();
                         if (!guest.getName().equals(name)) {
                             guest.setName(name);
-                            guestDAO.update(guest);
+                            guestDAO.update(guest, session);
                             updated++;
-                            System.out.println("Обновлен: " + name);
                         }
                     } else {
-                        System.out.println("Создаем нового гостя: " + name);
                         Guest guest = new Guest();
                         guest.setName(name);
                         guest.setPassportNumber(passportNumber);
 
-                        guestDAO.save(guest);
+                        guestDAO.save(guest, session);
                         imported++;
-                        System.out.println("Добавлен: " + name);
                     }
 
                 } catch (Exception e) {
-                    String error = "Строка " + lineNum + ": " + e.getMessage() + " - " + line;
-                    errors.add(error);
-                    System.out.println("ОШИБКА: " + error);
-                    e.printStackTrace();
+                    errors.add("Строка " + lineNum + ": " + e.getMessage() + " - " + line);
                 }
             }
 
@@ -85,7 +91,6 @@ public class GuestCsvImporter {
             return "Ошибка чтения файла: " + e.getMessage();
         }
 
-        System.out.println("=== Импорт гостей завершен ===");
         return String.format("Импорт гостей завершен: %d добавлено, %d обновлено. Ошибок: %d",
                 imported, updated, errors.size());
     }

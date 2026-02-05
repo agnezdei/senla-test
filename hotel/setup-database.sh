@@ -1,35 +1,42 @@
 #!/bin/bash
-# Простой скрипт создания базы данных
 
-echo "Создаем базу данных hotel.db..."
+echo "Создаем базу данных hotel..."
 
-# Удаляем старый файл если существует
-if [ -f "hotel.db" ]; then
-    echo "Удаляем старую базу данных..."
-    rm hotel.db
-fi
+# Удаляем старую базу если существует
+echo "Удаляем старую базу данных..."
+dropdb --if-exists hotel
+
+# Создаем новую базу
+echo "Создаем новую базу данных..."
+createdb hotel
 
 # Определяем путь к SQL файлам
+echo "Поиск SQL файлов..."
 if [ -f "sql/schema.sql" ]; then
     SCHEMA="sql/schema.sql"
     DATA="sql/data.sql"
-elif [ -f "core-module/resources/schema.sql" ]; then
-    SCHEMA="core-module/resources/schema.sql"
-    DATA="core-module/resources/data.sql"
+elif [ -f "core-module/src/main/resources/schema.sql" ]; then
+    SCHEMA="core-module/src/main/resources/schema.sql"
+    DATA="core-module/src/main/resources/data.sql"
+elif [ -f "src/main/resources/schema.sql" ]; then
+    SCHEMA="src/main/resources/schema.sql"
+    DATA="src/main/resources/data.sql"
 else
     echo "ОШИБКА: Не найден schema.sql!"
+    echo "Ищу в текущей директории: $(pwd)"
+    find . -name "schema.sql" 2>/dev/null || echo "Файл не найден"
     exit 1
 fi
 
 echo "Используем схему: $SCHEMA"
 echo "Используем данные: $DATA"
 
-# Создаем базу
+# Выполняем SQL файлы
 echo "Выполняем schema.sql..."
-sqlite3 hotel.db ".read $SCHEMA"
+psql -d hotel -f "$SCHEMA"
 
 echo "Выполняем data.sql..."
-sqlite3 hotel.db ".read $DATA"
+psql -d hotel -f "$DATA"
 
 echo "Готово! Проверка:"
-echo ".tables" | sqlite3 hotel.db
+echo "\dt" | psql hotel

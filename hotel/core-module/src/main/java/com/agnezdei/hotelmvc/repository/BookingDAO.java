@@ -172,4 +172,25 @@ public class BookingDAO extends AbstractHibernateDAO<Booking, Long> {
             }
         }
     }
+
+    public List<Booking> findAll() throws DAOException {
+        Session session = null;
+        try {
+            session = HibernateUtil.openSession();
+            String hql = "SELECT DISTINCT b FROM Booking b " +
+                        "JOIN FETCH b.guest " +
+                        "JOIN FETCH b.room " +
+                        "ORDER BY b.checkInDate DESC";
+            Query query = session.createQuery(hql);
+            @SuppressWarnings("unchecked")
+            List<Booking> result = query.list();
+            return result;
+        } catch (Exception e) {
+            throw new DAOException("Ошибка при получении всех бронирований", e);
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
+        }
+    }
 }

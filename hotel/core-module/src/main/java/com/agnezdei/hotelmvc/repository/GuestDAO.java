@@ -84,4 +84,22 @@ public class GuestDAO extends AbstractHibernateDAO<Guest, Long> {
             }
         }
     }
+
+    public List<Guest> findAll() throws DAOException {
+        Session session = null;
+        try {
+            session = HibernateUtil.openSession();
+            String hql = "FROM Guest g ORDER BY g.name";
+            Query query = session.createQuery(hql);
+            @SuppressWarnings("unchecked")
+            List<Guest> result = query.list();
+            return result;
+        } catch (Exception e) {
+            throw new DAOException("Ошибка при получении всех гостей", e);
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
+        }
+    }
 }

@@ -76,6 +76,24 @@ public class RoomDAO extends AbstractHibernateDAO<Room, Long> {
             throw new DAOException("Ошибка при подсчете доступных комнат", e);
         }
     }
+
+    public List<Room> findAll() throws DAOException {
+        Session session = null;
+        try {
+            session = HibernateUtil.openSession();
+            String hql = "FROM Room r ORDER BY r.number";
+            Query query = session.createQuery(hql);
+            @SuppressWarnings("unchecked")
+            List<Room> result = query.list();
+            return result;
+        } catch (Exception e) {
+            throw new DAOException("Ошибка при получении всех комнат", e);
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
+        }
+    }
     
     public Optional<Room> findByNumber(String number) throws DAOException {
         Session session = null;

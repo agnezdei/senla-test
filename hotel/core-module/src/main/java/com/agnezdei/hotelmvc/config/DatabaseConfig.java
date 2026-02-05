@@ -56,18 +56,7 @@ public class DatabaseConfig {
         String user = properties.getProperty("db.user", "");
         String password = properties.getProperty("db.password", "");
 
-        Connection conn = DriverManager.getConnection(url, user, password);
-
-        // Настройки для SQLite
-        if (url.contains("sqlite")) {
-            try (var stmt = conn.createStatement()) {
-                stmt.execute("PRAGMA foreign_keys = ON");
-                stmt.execute("PRAGMA journal_mode = WAL");
-                stmt.execute("PRAGMA synchronous = NORMAL");
-            }
-        }
-
-        return conn;
+        return DriverManager.getConnection(url, user, password);
     }
 
     public String getProperty(String key) {

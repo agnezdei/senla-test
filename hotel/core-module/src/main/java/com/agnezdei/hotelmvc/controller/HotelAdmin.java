@@ -90,9 +90,8 @@ public class HotelAdmin {
 
     public String exportRoomsToCsv(String filePath) {
         logger.info("Начало экспорта номеров в файл: {}", filePath);
-        Session session = null;
         try {
-            List<Room> rooms = roomDAO.findAll(session);
+            List<Room> rooms = roomDAO.findAll();
             List<RoomDTO> roomDTOs = RoomMapper.toDTOList(rooms);
             csvExporter.exportRooms(roomDTOs, filePath);
             String result = "Успех: Номера экспортированы в " + filePath;
@@ -109,9 +108,8 @@ public class HotelAdmin {
 
     public String exportServicesToCsv(String filePath) {
         logger.info("Начало экспорта услуг в файл: {}", filePath);
-        Session session = null;
         try {
-            List<Service> services = serviceDAO.findAll(session);
+            List<Service> services = serviceDAO.findAll();
             List<ServiceDTO> serviceDTOs = ServiceMapper.toDTOList(services);
             csvExporter.exportServices(serviceDTOs, filePath);
             String result = "Успех: Услуги экспортированы в " + filePath;
@@ -128,9 +126,8 @@ public class HotelAdmin {
 
     public String exportGuestsToCsv(String filePath) {
         logger.info("Начало экспорта гостей в файл: {}", filePath);
-        Session session = null;
         try {
-            List<Guest> guests = guestDAO.findAll(session);
+            List<Guest> guests = guestDAO.findAll();
             List<GuestDTO> guestDTOs = GuestMapper.toDTOList(guests);
             csvExporter.exportGuests(guestDTOs, filePath);
             String result = "Успех: Гости экспортированы в " + filePath;
@@ -147,9 +144,8 @@ public class HotelAdmin {
 
     public String exportBookingsToCsv(String filePath) {
         logger.info("Начало экспорта бронирований в файл: {}", filePath);
-        Session session = null;
         try {
-            List<Booking> bookings = bookingDAO.findAll(session);
+            List<Booking> bookings = bookingDAO.findAll();
             List<BookingDTO> bookingDTOs = BookingMapper.toDTOList(bookings);
             csvExporter.exportBookings(bookingDTOs, filePath);
             String result = "Успех: Бронирования экспортированы в " + filePath;
@@ -164,7 +160,7 @@ public class HotelAdmin {
         }
     }
 
-    public String exportGuestServicesToCsv(String filePath) {
+        public String exportGuestServicesToCsv(String filePath) {
         logger.info("Начало экспорта услуг гостей в файл: {}", filePath);
         try {
             List<GuestService> guestServices = guestServiceDAO.findAll();

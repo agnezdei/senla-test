@@ -83,7 +83,7 @@ public class HotelApp {
             container.register(HotelAdmin.class, admin);
             container.register(HotelReporter.class, reporter);
 
-            System.out.println("\nПроверка состояния базы данных...");
+            System.out.println("Проверка состояния базы данных...");
             try {
                 int roomCount = roomDAO.findAll().size();
                 int guestCount = guestDAO.findAll().size();
