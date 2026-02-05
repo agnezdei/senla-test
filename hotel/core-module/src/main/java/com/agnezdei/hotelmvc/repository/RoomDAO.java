@@ -18,15 +18,70 @@ public class RoomDAO extends AbstractHibernateDAO<Room, Long> {
         super();
     }
     
-    public Optional<Room> findByNumber(String number) throws DAOException {
-        Session session = null;
+    
+    public Optional<Room> findByNumber(String number, Session session) throws DAOException {
         try {
-            session = HibernateUtil.openSession();
             String hql = "FROM Room r WHERE r.number = :number";
             Query query = session.createQuery(hql);
             query.setParameter("number", number);
             Room room = (Room) query.uniqueResult();
             return Optional.ofNullable(room);
+        } catch (Exception e) {
+            throw new DAOException("Ошибка при поиске комнаты по номеру: " + number, e);
+        }
+    }
+    
+    public List<Room> findAvailableRooms(Session session) throws DAOException {
+        try {
+            String hql = "FROM Room r WHERE r.status = :status ORDER BY r.number";
+            Query query = session.createQuery(hql);
+            query.setParameter("status", RoomStatus.AVAILABLE);
+            @SuppressWarnings("unchecked")
+            List<Room> result = query.list();
+            return result;
+        } catch (Exception e) {
+            throw new DAOException("Ошибка при поиске доступных комнат", e);
+        }
+    }
+    
+    public List<Room> findRoomsAvailableOnDate(LocalDate date, Session session) throws DAOException {
+        try {
+            String hql = "FROM Room r WHERE r.status = :status " +
+                        "AND r.id NOT IN (" +
+                        "  SELECT b.room.id FROM Booking b " +
+                        "  WHERE b.isActive = true " +
+                        "  AND :date BETWEEN b.checkInDate AND b.checkOutDate" +
+                        ") ORDER BY r.number";
+            
+            Query query = session.createQuery(hql);
+            query.setParameter("status", RoomStatus.AVAILABLE);
+            query.setParameter("date", date.toString());
+            
+            @SuppressWarnings("unchecked")
+            List<Room> result = query.list();
+            return result;
+        } catch (Exception e) {
+            throw new DAOException("Ошибка при поиске комнат на дату: " + date, e);
+        }
+    }
+    
+    public int countAvailableRooms(Session session) throws DAOException {
+        try {
+            String hql = "SELECT COUNT(r.id) FROM Room r WHERE r.status = :status";
+            Query query = session.createQuery(hql);
+            query.setParameter("status", RoomStatus.AVAILABLE);
+            Long count = (Long) query.uniqueResult();
+            return count != null ? count.intValue() : 0;
+        } catch (Exception e) {
+            throw new DAOException("Ошибка при подсчете доступных комнат", e);
+        }
+    }
+    
+    public Optional<Room> findByNumber(String number) throws DAOException {
+        Session session = null;
+        try {
+            session = HibernateUtil.openSession();
+            return findByNumber(number, session);
         } catch (Exception e) {
             throw new DAOException("Ошибка при поиске комнаты по номеру: " + number, e);
         } finally {
@@ -40,12 +95,7 @@ public class RoomDAO extends AbstractHibernateDAO<Room, Long> {
         Session session = null;
         try {
             session = HibernateUtil.openSession();
-            String hql = "FROM Room r WHERE r.status = :status ORDER BY r.number";
-            Query query = session.createQuery(hql);
-            query.setParameter("status", RoomStatus.AVAILABLE);
-            @SuppressWarnings("unchecked")
-            List<Room> result = query.list();
-            return result;
+            return findAvailableRooms(session);
         } catch (Exception e) {
             throw new DAOException("Ошибка при поиске доступных комнат", e);
         } finally {
@@ -188,20 +238,7 @@ public class RoomDAO extends AbstractHibernateDAO<Room, Long> {
         Session session = null;
         try {
             session = HibernateUtil.openSession();
-            String hql = "FROM Room r WHERE r.status = :status " +
-                        "AND r.id NOT IN (" +
-                        "  SELECT b.room.id FROM Booking b " +
-                        "  WHERE b.isActive = true " +
-                        "  AND :date BETWEEN b.checkInDate AND b.checkOutDate" +
-                        ") ORDER BY r.number";
-            
-            Query query = session.createQuery(hql);
-            query.setParameter("status", RoomStatus.AVAILABLE);
-            query.setParameter("date", date.toString());
-            
-            @SuppressWarnings("unchecked")
-            List<Room> result = query.list();
-            return result;
+            return findRoomsAvailableOnDate(date, session);
         } catch (Exception e) {
             throw new DAOException("Ошибка при поиске комнат на дату: " + date, e);
         } finally {
@@ -215,11 +252,7 @@ public class RoomDAO extends AbstractHibernateDAO<Room, Long> {
         Session session = null;
         try {
             session = HibernateUtil.openSession();
-            String hql = "SELECT COUNT(r.id) FROM Room r WHERE r.status = :status";
-            Query query = session.createQuery(hql);
-            query.setParameter("status", RoomStatus.AVAILABLE);
-            Long count = (Long) query.uniqueResult();
-            return count != null ? count.intValue() : 0;
+            return countAvailableRooms(session);
         } catch (Exception e) {
             throw new DAOException("Ошибка при подсчете доступных комнат", e);
         } finally {

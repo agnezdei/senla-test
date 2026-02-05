@@ -16,6 +16,18 @@ public class GuestDAO extends AbstractHibernateDAO<Guest, Long> {
         super();
     }
     
+    public Optional<Guest> findByPassportNumber(String passportNumber, Session session) throws DAOException {
+        try {
+            String hql = "FROM Guest WHERE passportNumber = :passportNumber";
+            Query query = session.createQuery(hql);
+            query.setParameter("passportNumber", passportNumber);
+            Guest guest = (Guest) query.uniqueResult();
+            return Optional.ofNullable(guest);
+        } catch (Exception e) {
+            throw new DAOException("Ошибка при поиске гостя по номеру паспорта: " + passportNumber, e);
+        }
+    }
+    
     public Optional<Guest> findByPassportNumber(String passportNumber) throws DAOException {
         Session session = null;
         try {

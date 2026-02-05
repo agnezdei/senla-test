@@ -1,6 +1,7 @@
 package com.agnezdei.hotelmvc;
 
 import com.agnezdei.hotelmvc.config.AppConfig;
+import com.agnezdei.hotelmvc.config.ConfigProcessor;
 import com.agnezdei.hotelmvc.config.DatabaseConfig;
 import com.agnezdei.hotelmvc.controller.HotelAdmin;
 import com.agnezdei.hotelmvc.controller.HotelReporter;
@@ -25,6 +26,7 @@ public class HotelApp {
         try {
             System.out.println("Загрузка конфигурации...");
             AppConfig config = new AppConfig();
+            ConfigProcessor.process(config);
             System.out.println("Конфигурация загружена:");
             System.out.println("  - Разрешено менять статус комнат: " + config.isAllowRoomStatusChange());
             System.out.println("  - Макс. записей истории: " + config.getMaxBookingHistoryEntries());
@@ -40,7 +42,6 @@ public class HotelApp {
 
             System.out.println("Создание DAO репозиториев...");
 
-            // Создаем DAO объекты - теперь в пакете repository.dao
             RoomDAO roomDAO = new RoomDAO();
             GuestDAO guestDAO = new GuestDAO();
             ServiceDAO serviceDAO = new ServiceDAO();

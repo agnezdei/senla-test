@@ -16,10 +16,23 @@ public class GuestServiceDAO extends AbstractHibernateDAO<GuestService, Long> {
         super();
     }
     
-    public List<GuestService> findByGuestId(Long guestId) throws DAOException {
-        Session session = null;
+    public Optional<GuestService> findById(Long id, Session session) throws DAOException {
         try {
-            session = HibernateUtil.openSession();
+            String hql = "SELECT DISTINCT gs FROM GuestService gs " +
+                        "JOIN FETCH gs.service " +
+                        "JOIN FETCH gs.guest " +
+                        "WHERE gs.id = :id";
+            Query query = session.createQuery(hql);
+            query.setParameter("id", id);
+            GuestService guestService = (GuestService) query.uniqueResult();
+            return Optional.ofNullable(guestService);
+        } catch (Exception e) {
+            throw new DAOException("Ошибка при поиске заказа услуги по ID: " + id, e);
+        }
+    }
+    
+    public List<GuestService> findByGuestId(Long guestId, Session session) throws DAOException {
+        try {
             String hql = "SELECT DISTINCT gs FROM GuestService gs " +
                         "JOIN FETCH gs.service " +
                         "JOIN FETCH gs.guest " +
@@ -29,6 +42,46 @@ public class GuestServiceDAO extends AbstractHibernateDAO<GuestService, Long> {
             @SuppressWarnings("unchecked")
             List<GuestService> result = query.list();
             return result;
+        } catch (Exception e) {
+            throw new DAOException("Ошибка при поиске заказов услуг гостя: " + guestId, e);
+        }
+    }
+    
+    public List<GuestService> findAll(Session session) throws DAOException {
+        try {
+            String hql = "SELECT DISTINCT gs FROM GuestService gs " +
+                        "JOIN FETCH gs.service " +
+                        "JOIN FETCH gs.guest " +
+                        "ORDER BY gs.serviceDate DESC";
+            Query query = session.createQuery(hql);
+            @SuppressWarnings("unchecked")
+            List<GuestService> result = query.list();
+            return result;
+        } catch (Exception e) {
+            throw new DAOException("Ошибка при получении всех заказов услуг", e);
+        }
+    }
+    
+    
+    public Optional<GuestService> findById(Long id) throws DAOException {
+        Session session = null;
+        try {
+            session = HibernateUtil.openSession();
+            return findById(id, session);
+        } catch (Exception e) {
+            throw new DAOException("Ошибка при поиске заказа услуги по ID: " + id, e);
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
+        }
+    }
+    
+    public List<GuestService> findByGuestId(Long guestId) throws DAOException {
+        Session session = null;
+        try {
+            session = HibernateUtil.openSession();
+            return findByGuestId(guestId, session);
         } catch (Exception e) {
             throw new DAOException("Ошибка при поиске заказов услуг гостя: " + guestId, e);
         } finally {
@@ -149,45 +202,14 @@ public class GuestServiceDAO extends AbstractHibernateDAO<GuestService, Long> {
             }
         }
     }
-
-    @Override
+    
     public List<GuestService> findAll() throws DAOException {
         Session session = null;
         try {
             session = HibernateUtil.openSession();
-            String hql = "SELECT DISTINCT gs FROM GuestService gs " +
-                        "JOIN FETCH gs.service " +
-                        "JOIN FETCH gs.guest " +
-                        "ORDER BY gs.serviceDate DESC";
-            Query query = session.createQuery(hql);
-            @SuppressWarnings("unchecked")
-            List<GuestService> result = query.list();
-            return result;
+            return findAll(session);
         } catch (Exception e) {
             throw new DAOException("Ошибка при получении всех заказов услуг", e);
-        } finally {
-            if (session != null && session.isOpen()) {
-                session.close();
-            }
-        }
-    }
-    
-    // Переопределяем findById() с JOIN FETCH
-    @Override
-    public Optional<GuestService> findById(Long id) throws DAOException {
-        Session session = null;
-        try {
-            session = HibernateUtil.openSession();
-            String hql = "SELECT DISTINCT gs FROM GuestService gs " +
-                        "JOIN FETCH gs.service " +
-                        "JOIN FETCH gs.guest " +
-                        "WHERE gs.id = :id";
-            Query query = session.createQuery(hql);
-            query.setParameter("id", id);
-            GuestService guestService = (GuestService) query.uniqueResult();
-            return Optional.ofNullable(guestService);
-        } catch (Exception e) {
-            throw new DAOException("Ошибка при поиске заказа услуги по ID: " + id, e);
         } finally {
             if (session != null && session.isOpen()) {
                 session.close();

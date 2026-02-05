@@ -17,15 +17,49 @@ public class ServiceDAO extends AbstractHibernateDAO<Service, Long> {
         super();
     }
     
-    public Optional<Service> findByName(String name) throws DAOException {
-        Session session = null;
+    public Optional<Service> findByName(String name, Session session) throws DAOException {
         try {
-            session = HibernateUtil.openSession();
             String hql = "FROM Service s WHERE s.name = :name";
             Query query = session.createQuery(hql);
             query.setParameter("name", name);
             Service service = (Service) query.uniqueResult();
             return Optional.ofNullable(service);
+        } catch (Exception e) {
+            throw new DAOException("Ошибка при поиске услуги по названию: " + name, e);
+        }
+    }
+    
+    public List<Service> findByCategory(ServiceCategory category, Session session) throws DAOException {
+        try {
+            String hql = "FROM Service s WHERE s.category = :category ORDER BY s.name";
+            Query query = session.createQuery(hql);
+            query.setParameter("category", category);
+            @SuppressWarnings("unchecked")
+            List<Service> result = query.list();
+            return result;
+        } catch (Exception e) {
+            throw new DAOException("Ошибка при поиске услуг по категории: " + category, e);
+        }
+    }
+    
+    public List<Service> findAllOrderedByCategoryAndPrice(Session session) throws DAOException {
+        try {
+            String hql = "FROM Service s ORDER BY s.category, s.price";
+            Query query = session.createQuery(hql);
+            @SuppressWarnings("unchecked")
+            List<Service> result = query.list();
+            return result;
+        } catch (Exception e) {
+            throw new DAOException("Ошибка при получении услуг, отсортированных по категории и цене", e);
+        }
+    }
+    
+    
+    public Optional<Service> findByName(String name) throws DAOException {
+        Session session = null;
+        try {
+            session = HibernateUtil.openSession();
+            return findByName(name, session);
         } catch (Exception e) {
             throw new DAOException("Ошибка при поиске услуги по названию: " + name, e);
         } finally {
@@ -39,12 +73,7 @@ public class ServiceDAO extends AbstractHibernateDAO<Service, Long> {
         Session session = null;
         try {
             session = HibernateUtil.openSession();
-            String hql = "FROM Service s WHERE s.category = :category ORDER BY s.name";
-            Query query = session.createQuery(hql);
-            query.setParameter("category", category);
-            @SuppressWarnings("unchecked")
-            List<Service> result = query.list();
-            return result;
+            return findByCategory(category, session);
         } catch (Exception e) {
             throw new DAOException("Ошибка при поиске услуг по категории: " + category, e);
         } finally {
@@ -58,11 +87,7 @@ public class ServiceDAO extends AbstractHibernateDAO<Service, Long> {
         Session session = null;
         try {
             session = HibernateUtil.openSession();
-            String hql = "FROM Service s ORDER BY s.category, s.price";
-            Query query = session.createQuery(hql);
-            @SuppressWarnings("unchecked")
-            List<Service> result = query.list();
-            return result;
+            return findAllOrderedByCategoryAndPrice(session);
         } catch (Exception e) {
             throw new DAOException("Ошибка при получении услуг, отсортированных по категории и цене", e);
         } finally {
