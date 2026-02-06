@@ -23,6 +23,7 @@
         <logback.version>1.2.11</logback.version>
         <checkstyle.version>10.12.5</checkstyle.version>
         <maven.checkstyle.plugin.version>3.2.2</maven.checkstyle.plugin.version>
+        <hibernate.version>4.3.11.Final</hibernate.version>
     </properties>
     
     <dependencyManagement>
@@ -40,28 +41,27 @@
             </dependency>
 
             <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>${slf4j.version}</version>
-        </dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
         
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>${logback.version}</version>
-        </dependency>
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+                <version>${logback.version}</version>
+            </dependency>
         
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-core</artifactId>
-            <version>${logback.version}</version>
-        </dependency>
-
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-core</artifactId>
+                <version>${logback.version}</version>
+            </dependency>
 
             <dependency>
                 <groupId>org.hibernate</groupId>
                 <artifactId>hibernate-core</artifactId>
-                <version>3.6.10.Final</version>
+                <version>4.3.11.Final</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
