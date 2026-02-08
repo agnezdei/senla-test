@@ -3,12 +3,13 @@ package com.agnezdei.hotelmvc.repository;
 import java.util.List;
 import java.util.Optional;
 
-import org.hibernate.Query;
-import org.hibernate.Session;
+import  org.hibernate.Session;
 
 import com.agnezdei.hotelmvc.exceptions.DAOException;
 import com.agnezdei.hotelmvc.model.Guest;
 import com.agnezdei.hotelmvc.util.HibernateUtil;
+
+import jakarta.persistence.Query;
 
 public class GuestDAO extends AbstractHibernateDAO<Guest, Long> {
 
@@ -21,7 +22,7 @@ public class GuestDAO extends AbstractHibernateDAO<Guest, Long> {
             String hql = "FROM Guest WHERE passportNumber = :passportNumber";
             Query query = session.createQuery(hql);
             query.setParameter("passportNumber", passportNumber);
-            Guest guest = (Guest) query.uniqueResult();
+            Guest guest = (Guest) query.getResultList();
             return Optional.ofNullable(guest);
         } catch (Exception e) {
             throw new DAOException("Ошибка при поиске гостя по номеру паспорта: " + passportNumber, e);
@@ -35,7 +36,7 @@ public class GuestDAO extends AbstractHibernateDAO<Guest, Long> {
             String hql = "FROM Guest WHERE passportNumber = :passportNumber";
             Query query = session.createQuery(hql);
             query.setParameter("passportNumber", passportNumber);
-            Guest guest = (Guest) query.uniqueResult();
+            Guest guest = (Guest) query.getResultList();
             return Optional.ofNullable(guest);
         } catch (Exception e) {
             throw new DAOException("Ошибка при поиске гостя по номеру паспорта: " + passportNumber, e);
@@ -55,7 +56,7 @@ public class GuestDAO extends AbstractHibernateDAO<Guest, Long> {
                         "WHERE b.isActive = true";
             Query query = session.createQuery(hql);
             @SuppressWarnings("unchecked")
-            List<Guest> result = query.list();
+            List<Guest> result = query.getResultList();
             return result;
         } catch (Exception e) {
             throw new DAOException("Ошибка при получении гостей с активными бронированиями", e);
@@ -74,7 +75,7 @@ public class GuestDAO extends AbstractHibernateDAO<Guest, Long> {
                         "JOIN g.bookings b " +
                         "WHERE b.isActive = true";
             Query query = session.createQuery(hql);
-            Long count = (Long) query.uniqueResult();
+            Long count = (Long) query.getSingleResult();
             return count != null ? count.intValue() : 0;
         } catch (Exception e) {
             throw new DAOException("Ошибка при подсчете активных гостей", e);
@@ -92,7 +93,7 @@ public class GuestDAO extends AbstractHibernateDAO<Guest, Long> {
             String hql = "FROM Guest g ORDER BY g.name";
             Query query = session.createQuery(hql);
             @SuppressWarnings("unchecked")
-            List<Guest> result = query.list();
+            List<Guest> result = query.getResultList();
             return result;
         } catch (Exception e) {
             throw new DAOException("Ошибка при получении всех гостей", e);

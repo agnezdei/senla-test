@@ -3,13 +3,14 @@ package com.agnezdei.hotelmvc.repository;
 import java.util.List;
 import java.util.Optional;
 
-import org.hibernate.Query;
-import org.hibernate.Session;
+import  org.hibernate.Session;
 
 import com.agnezdei.hotelmvc.exceptions.DAOException;
 import com.agnezdei.hotelmvc.model.Service;
 import com.agnezdei.hotelmvc.model.ServiceCategory;
 import com.agnezdei.hotelmvc.util.HibernateUtil;
+
+import jakarta.persistence.Query;
 
 public class ServiceDAO extends AbstractHibernateDAO<Service, Long> {
 
@@ -22,7 +23,7 @@ public class ServiceDAO extends AbstractHibernateDAO<Service, Long> {
             String hql = "FROM Service s WHERE s.name = :name";
             Query query = session.createQuery(hql);
             query.setParameter("name", name);
-            Service service = (Service) query.uniqueResult();
+            Service service = (Service) query.getResultList();
             return Optional.ofNullable(service);
         } catch (Exception e) {
             throw new DAOException("Ошибка при поиске услуги по названию: " + name, e);
@@ -35,7 +36,7 @@ public class ServiceDAO extends AbstractHibernateDAO<Service, Long> {
             Query query = session.createQuery(hql);
             query.setParameter("category", category);
             @SuppressWarnings("unchecked")
-            List<Service> result = query.list();
+            List<Service> result = query.getResultList();
             return result;
         } catch (Exception e) {
             throw new DAOException("Ошибка при поиске услуг по категории: " + category, e);
@@ -47,7 +48,7 @@ public class ServiceDAO extends AbstractHibernateDAO<Service, Long> {
             String hql = "FROM Service s ORDER BY s.category, s.price";
             Query query = session.createQuery(hql);
             @SuppressWarnings("unchecked")
-            List<Service> result = query.list();
+            List<Service> result = query.getResultList();
             return result;
         } catch (Exception e) {
             throw new DAOException("Ошибка при получении услуг, отсортированных по категории и цене", e);
@@ -104,7 +105,7 @@ public class ServiceDAO extends AbstractHibernateDAO<Service, Long> {
             String hql = "FROM Service s ORDER BY s.name";
             Query query = session.createQuery(hql);
             @SuppressWarnings("unchecked")
-            List<Service> result = query.list();
+            List<Service> result = query.getResultList();
             return result;
         } catch (Exception e) {
             throw new DAOException("Ошибка при получении всех услуг", e);

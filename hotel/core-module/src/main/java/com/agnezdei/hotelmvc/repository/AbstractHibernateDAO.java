@@ -4,8 +4,10 @@ import java.io.Serializable;
 import java.lang.reflect.ParameterizedType;
 import java.util.List;
 import java.util.Optional;
-import org.hibernate.Query;
+
 import org.hibernate.Session;
+import  jakarta.persistence.Query;
+
 import com.agnezdei.hotelmvc.exceptions.DAOException;
 
 public abstract class AbstractHibernateDAO<T, ID extends Serializable> implements GenericDAO<T, ID> {
@@ -25,7 +27,7 @@ public abstract class AbstractHibernateDAO<T, ID extends Serializable> implement
     @Override
     public T save(T entity, Session session) throws DAOException {
         try {
-            session.save(entity);
+            session.persist(entity);
             return entity;
         } catch (Exception e) {
             throw new DAOException("Ошибка сохранения " + entityClass.getSimpleName(), e);
@@ -35,7 +37,7 @@ public abstract class AbstractHibernateDAO<T, ID extends Serializable> implement
     @Override
     public Optional<T> findById(ID id, Session session) throws DAOException {
         try {
-            T entity = (T) session.get(entityClass, id);
+            T entity = session.get(entityClass, id);
             return Optional.ofNullable(entity);
         } catch (Exception e) {
             throw new DAOException("Ошибка поиска по ID: " + id, e);
@@ -45,19 +47,21 @@ public abstract class AbstractHibernateDAO<T, ID extends Serializable> implement
     @Override
     public List<T> findAll(Session session) throws DAOException {
         try {
-            Query query = session.createQuery("FROM " + entityClass.getSimpleName());
-            @SuppressWarnings("unchecked")
-            List<T> result = query.list();
-            return result;
-        } catch (Exception e) {
-            throw new DAOException("Ошибка получения всех записей", e);
-        }
+        @SuppressWarnings("unchecked")
+        List<T> result = session.createQuery(
+            "FROM " + entityClass.getSimpleName()
+        ).list();
+        
+        return result;
+    } catch (Exception e) {
+        throw new DAOException("Ошибка получения всех записей", e);
+    }
     }
     
     @Override
     public void update(T entity, Session session) throws DAOException {
         try {
-            session.update(entity);
+            session.merge(entity);
         } catch (Exception e) {
             throw new DAOException("Ошибка обновления " + entityClass.getSimpleName(), e);
         }
@@ -66,9 +70,9 @@ public abstract class AbstractHibernateDAO<T, ID extends Serializable> implement
     @Override
     public void delete(ID id, Session session) throws DAOException {
         try {
-            T entity = (T) session.get(entityClass, id);
+            T entity = session.get(entityClass, id);
             if (entity != null) {
-                session.delete(entity);
+                session.remove(entity);
             }
         } catch (Exception e) {
             throw new DAOException("Ошибка удаления " + entityClass.getSimpleName() + " с ID=" + id, e);

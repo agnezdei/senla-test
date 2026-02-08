@@ -3,12 +3,13 @@ package com.agnezdei.hotelmvc.repository;
 import java.util.List;
 import java.util.Optional;
 
-import org.hibernate.Query;
-import org.hibernate.Session;
+import  org.hibernate.Session;
 
 import com.agnezdei.hotelmvc.exceptions.DAOException;
 import com.agnezdei.hotelmvc.model.GuestService;
 import com.agnezdei.hotelmvc.util.HibernateUtil;
+
+import jakarta.persistence.Query;
 
 public class GuestServiceDAO extends AbstractHibernateDAO<GuestService, Long> {
 
@@ -24,7 +25,7 @@ public class GuestServiceDAO extends AbstractHibernateDAO<GuestService, Long> {
                         "WHERE gs.id = :id";
             Query query = session.createQuery(hql);
             query.setParameter("id", id);
-            GuestService guestService = (GuestService) query.uniqueResult();
+            GuestService guestService = (GuestService) query.getResultList();
             return Optional.ofNullable(guestService);
         } catch (Exception e) {
             throw new DAOException("Ошибка при поиске заказа услуги по ID: " + id, e);
@@ -40,7 +41,7 @@ public class GuestServiceDAO extends AbstractHibernateDAO<GuestService, Long> {
             Query query = session.createQuery(hql);
             query.setParameter("guestId", guestId);
             @SuppressWarnings("unchecked")
-            List<GuestService> result = query.list();
+            List<GuestService> result = query.getResultList();
             return result;
         } catch (Exception e) {
             throw new DAOException("Ошибка при поиске заказов услуг гостя: " + guestId, e);
@@ -55,7 +56,7 @@ public class GuestServiceDAO extends AbstractHibernateDAO<GuestService, Long> {
                         "ORDER BY gs.serviceDate DESC";
             Query query = session.createQuery(hql);
             @SuppressWarnings("unchecked")
-            List<GuestService> result = query.list();
+            List<GuestService> result = query.getResultList();
             return result;
         } catch (Exception e) {
             throw new DAOException("Ошибка при получении всех заказов услуг", e);
@@ -102,7 +103,7 @@ public class GuestServiceDAO extends AbstractHibernateDAO<GuestService, Long> {
             Query query = session.createQuery(hql);
             query.setParameter("serviceId", serviceId);
             @SuppressWarnings("unchecked")
-            List<GuestService> result = query.list();
+            List<GuestService> result = query.getResultList();
             return result;
         } catch (Exception e) {
             throw new DAOException("Ошибка при поиске заказов для услуги: " + serviceId, e);
@@ -124,7 +125,7 @@ public class GuestServiceDAO extends AbstractHibernateDAO<GuestService, Long> {
             Query query = session.createQuery(hql);
             query.setParameter("guestId", guestId);
             @SuppressWarnings("unchecked")
-            List<GuestService> result = query.list();
+            List<GuestService> result = query.getResultList();
             return result;
         } catch (Exception e) {
             throw new DAOException("Ошибка при поиске услуг гостя, отсортированных по цене: " + guestId, e);
@@ -146,7 +147,7 @@ public class GuestServiceDAO extends AbstractHibernateDAO<GuestService, Long> {
             Query query = session.createQuery(hql);
             query.setParameter("guestId", guestId);
             @SuppressWarnings("unchecked")
-            List<GuestService> result = query.list();
+            List<GuestService> result = query.getResultList();
             return result;
         } catch (Exception e) {
             throw new DAOException("Ошибка при поиске услуг гостя, отсортированных по дате: " + guestId, e);
@@ -169,7 +170,7 @@ public class GuestServiceDAO extends AbstractHibernateDAO<GuestService, Long> {
             Query query = session.createQuery(hql);
             query.setParameter("guestName", "%" + guestName + "%");
             @SuppressWarnings("unchecked")
-            List<GuestService> result = query.list();
+            List<GuestService> result = query.getResultList();
             return result;
         } catch (Exception e) {
             throw new DAOException("Ошибка при поиске услуг гостя по имени, отсортированных по цене: " + guestName, e);
@@ -192,7 +193,7 @@ public class GuestServiceDAO extends AbstractHibernateDAO<GuestService, Long> {
             Query query = session.createQuery(hql);
             query.setParameter("guestName", "%" + guestName + "%");
             @SuppressWarnings("unchecked")
-            List<GuestService> result = query.list();
+            List<GuestService> result = query.getResultList();
             return result;
         } catch (Exception e) {
             throw new DAOException("Ошибка при поиске услуг гостя по имени, отсортированных по дате: " + guestName, e);

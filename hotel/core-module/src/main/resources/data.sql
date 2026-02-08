@@ -24,7 +24,7 @@ INSERT INTO service (name, price, category) VALUES
     ('Смена белья', 300.00, 'CLEANING'),
     ('Мини-бар (стандартный набор)', 1200.00, 'COMFORT'),
     ('SPA-процедуры (базовый пакет)', 2500.00, 'COMFORT'),
-    ('Трансфер из/в аэропорт', 2000.00, 'TRANSPORT')
+    ('Трансфер из/в аэропорт', 2000.00, 'COMFORT')
 ON CONFLICT DO NOTHING;
 
 -- Бронирования

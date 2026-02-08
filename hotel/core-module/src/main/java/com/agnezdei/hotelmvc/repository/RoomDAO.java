@@ -4,13 +4,14 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
-import org.hibernate.Query;
-import org.hibernate.Session;
+import  org.hibernate.Session;
 
 import com.agnezdei.hotelmvc.exceptions.DAOException;
 import com.agnezdei.hotelmvc.model.Room;
 import com.agnezdei.hotelmvc.model.RoomStatus;
 import com.agnezdei.hotelmvc.util.HibernateUtil;
+
+import jakarta.persistence.Query;
 
 public class RoomDAO extends AbstractHibernateDAO<Room, Long> {
 
@@ -24,7 +25,7 @@ public class RoomDAO extends AbstractHibernateDAO<Room, Long> {
             String hql = "FROM Room r WHERE r.number = :number";
             Query query = session.createQuery(hql);
             query.setParameter("number", number);
-            Room room = (Room) query.uniqueResult();
+            Room room = (Room) query.getResultList();
             return Optional.ofNullable(room);
         } catch (Exception e) {
             throw new DAOException("Ошибка при поиске комнаты по номеру: " + number, e);
@@ -37,7 +38,7 @@ public class RoomDAO extends AbstractHibernateDAO<Room, Long> {
             Query query = session.createQuery(hql);
             query.setParameter("status", RoomStatus.AVAILABLE);
             @SuppressWarnings("unchecked")
-            List<Room> result = query.list();
+            List<Room> result = query.getResultList();
             return result;
         } catch (Exception e) {
             throw new DAOException("Ошибка при поиске доступных комнат", e);
@@ -58,7 +59,7 @@ public class RoomDAO extends AbstractHibernateDAO<Room, Long> {
             query.setParameter("date", date.toString());
             
             @SuppressWarnings("unchecked")
-            List<Room> result = query.list();
+            List<Room> result = query.getResultList();
             return result;
         } catch (Exception e) {
             throw new DAOException("Ошибка при поиске комнат на дату: " + date, e);
@@ -70,7 +71,7 @@ public class RoomDAO extends AbstractHibernateDAO<Room, Long> {
             String hql = "SELECT COUNT(r.id) FROM Room r WHERE r.status = :status";
             Query query = session.createQuery(hql);
             query.setParameter("status", RoomStatus.AVAILABLE);
-            Long count = (Long) query.uniqueResult();
+            Long count = (Long) query.getSingleResult();
             return count != null ? count.intValue() : 0;
         } catch (Exception e) {
             throw new DAOException("Ошибка при подсчете доступных комнат", e);
@@ -84,7 +85,7 @@ public class RoomDAO extends AbstractHibernateDAO<Room, Long> {
             String hql = "FROM Room r ORDER BY r.number";
             Query query = session.createQuery(hql);
             @SuppressWarnings("unchecked")
-            List<Room> result = query.list();
+            List<Room> result = query.getResultList();
             return result;
         } catch (Exception e) {
             throw new DAOException("Ошибка при получении всех комнат", e);
@@ -130,7 +131,7 @@ public class RoomDAO extends AbstractHibernateDAO<Room, Long> {
             String hql = "FROM Room r ORDER BY r.price";
             Query query = session.createQuery(hql);
             @SuppressWarnings("unchecked")
-            List<Room> result = query.list();
+            List<Room> result = query.getResultList();
             return result;
         } catch (Exception e) {
             throw new DAOException("Ошибка при получении комнат, отсортированных по цене", e);
@@ -148,7 +149,7 @@ public class RoomDAO extends AbstractHibernateDAO<Room, Long> {
             String hql = "FROM Room r ORDER BY r.capacity";
             Query query = session.createQuery(hql);
             @SuppressWarnings("unchecked")
-            List<Room> result = query.list();
+            List<Room> result = query.getResultList();
             return result;
         } catch (Exception e) {
             throw new DAOException("Ошибка при получении комнат, отсортированных по вместимости", e);
@@ -166,7 +167,7 @@ public class RoomDAO extends AbstractHibernateDAO<Room, Long> {
             String hql = "FROM Room r ORDER BY r.stars";
             Query query = session.createQuery(hql);
             @SuppressWarnings("unchecked")
-            List<Room> result = query.list();
+            List<Room> result = query.getResultList();
             return result;
         } catch (Exception e) {
             throw new DAOException("Ошибка при получении комнат, отсортированных по звездам", e);
@@ -185,7 +186,7 @@ public class RoomDAO extends AbstractHibernateDAO<Room, Long> {
             Query query = session.createQuery(hql);
             query.setParameter("status", RoomStatus.AVAILABLE);
             @SuppressWarnings("unchecked")
-            List<Room> result = query.list();
+            List<Room> result = query.getResultList();
             return result;
         } catch (Exception e) {
             throw new DAOException("Ошибка при получении доступных комнат, отсортированных по цене", e);
@@ -204,7 +205,7 @@ public class RoomDAO extends AbstractHibernateDAO<Room, Long> {
             Query query = session.createQuery(hql);
             query.setParameter("status", RoomStatus.AVAILABLE);
             @SuppressWarnings("unchecked")
-            List<Room> result = query.list();
+            List<Room> result = query.getResultList();
             return result;
         } catch (Exception e) {
             throw new DAOException("Ошибка при получении доступных комнат, отсортированных по вместимости", e);
@@ -223,7 +224,7 @@ public class RoomDAO extends AbstractHibernateDAO<Room, Long> {
             Query query = session.createQuery(hql);
             query.setParameter("status", RoomStatus.AVAILABLE);
             @SuppressWarnings("unchecked")
-            List<Room> result = query.list();
+            List<Room> result = query.getResultList();
             return result;
         } catch (Exception e) {
             throw new DAOException("Ошибка при получении доступных комнат, отсортированных по звездам", e);
@@ -241,7 +242,7 @@ public class RoomDAO extends AbstractHibernateDAO<Room, Long> {
             String hql = "FROM Room r ORDER BY r.type, r.price";
             Query query = session.createQuery(hql);
             @SuppressWarnings("unchecked")
-            List<Room> result = query.list();
+            List<Room> result = query.getResultList();
             return result;
         } catch (Exception e) {
             throw new DAOException("Ошибка при получении комнат, отсортированных по типу и цене", e);

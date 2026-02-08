@@ -3,12 +3,13 @@ package com.agnezdei.hotelmvc.repository;
 import java.util.List;
 import java.util.Optional;
 
-import org.hibernate.Query;
-import org.hibernate.Session;
+import  org.hibernate.Session;
 
 import com.agnezdei.hotelmvc.exceptions.DAOException;
 import com.agnezdei.hotelmvc.model.Booking;
 import com.agnezdei.hotelmvc.util.HibernateUtil;
+
+import jakarta.persistence.Query;
 
 public class BookingDAO extends AbstractHibernateDAO<Booking, Long> {
 
@@ -25,7 +26,7 @@ public class BookingDAO extends AbstractHibernateDAO<Booking, Long> {
                         "WHERE b.id = :id";
             Query query = session.createQuery(hql);
             query.setParameter("id", id);
-            Booking booking = (Booking) query.uniqueResult();
+            Booking booking = (Booking) query.getResultList();
             return Optional.ofNullable(booking);
         } catch (Exception e) {
             throw new DAOException("Ошибка при поиске бронирования по ID: " + id, e);
@@ -41,7 +42,7 @@ public class BookingDAO extends AbstractHibernateDAO<Booking, Long> {
                         "ORDER BY b.checkInDate DESC";
             Query query = session.createQuery(hql);
             @SuppressWarnings("unchecked")
-            List<Booking> result = query.list();
+            List<Booking> result = query.getResultList();
             return result;
         } catch (Exception e) {
             throw new DAOException("Ошибка при получении всех бронирований", e);
@@ -57,7 +58,7 @@ public class BookingDAO extends AbstractHibernateDAO<Booking, Long> {
             Query query = session.createQuery(hql);
             query.setParameter("roomId", roomId);
             @SuppressWarnings("unchecked")
-            List<Booking> result = query.list();
+            List<Booking> result = query.getResultList();
             return result;
         } catch (Exception e) {
             throw new DAOException("Ошибка при поиске бронирований комнаты: " + roomId, e);
@@ -72,7 +73,7 @@ public class BookingDAO extends AbstractHibernateDAO<Booking, Long> {
                         "WHERE b.isActive = true ORDER BY b.checkInDate";
             Query query = session.createQuery(hql);
             @SuppressWarnings("unchecked")
-            List<Booking> result = query.list();
+            List<Booking> result = query.getResultList();
             return result;
         } catch (Exception e) {
             throw new DAOException("Ошибка при поиске активных бронирований", e);
@@ -118,7 +119,7 @@ public class BookingDAO extends AbstractHibernateDAO<Booking, Long> {
                         "WHERE b.isActive = true ORDER BY b.guest.name";
             Query query = session.createQuery(hql);
             @SuppressWarnings("unchecked")
-            List<Booking> result = query.list();
+            List<Booking> result = query.getResultList();
             return result;
         } catch (Exception e) {
             throw new DAOException("Ошибка при поиске активных бронирований, отсортированных по имени гостя", e);
@@ -139,7 +140,7 @@ public class BookingDAO extends AbstractHibernateDAO<Booking, Long> {
                         "WHERE b.isActive = true ORDER BY b.checkOutDate";
             Query query = session.createQuery(hql);
             @SuppressWarnings("unchecked")
-            List<Booking> result = query.list();
+            List<Booking> result = query.getResultList();
             return result;
         } catch (Exception e) {
             throw new DAOException("Ошибка при поиске активных бронирований, отсортированных по дате выезда", e);
@@ -162,7 +163,7 @@ public class BookingDAO extends AbstractHibernateDAO<Booking, Long> {
             query.setParameter("roomId", roomId);
             query.setMaxResults(3);
             @SuppressWarnings("unchecked")
-            List<Booking> result = query.list();
+            List<Booking> result = query.getResultList();
             return result;
         } catch (Exception e) {
             throw new DAOException("Ошибка при поиске истории комнаты: " + roomId, e);
@@ -183,7 +184,7 @@ public class BookingDAO extends AbstractHibernateDAO<Booking, Long> {
                         "ORDER BY b.checkInDate DESC";
             Query query = session.createQuery(hql);
             @SuppressWarnings("unchecked")
-            List<Booking> result = query.list();
+            List<Booking> result = query.getResultList();
             return result;
         } catch (Exception e) {
             throw new DAOException("Ошибка при получении всех бронирований", e);

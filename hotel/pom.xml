@@ -23,7 +23,7 @@
         <logback.version>1.2.11</logback.version>
         <checkstyle.version>10.12.5</checkstyle.version>
         <maven.checkstyle.plugin.version>3.2.2</maven.checkstyle.plugin.version>
-        <hibernate.version>4.3.11.Final</hibernate.version>
+        <hibernate.version>7.2.2.Final</hibernate.version>
     </properties>
     
     <dependencyManagement>
@@ -59,9 +59,9 @@
             </dependency>
 
             <dependency>
-                <groupId>org.hibernate</groupId>
+                <groupId>org.hibernate.orm</groupId>
                 <artifactId>hibernate-core</artifactId>
-                <version>4.3.11.Final</version>
+                <version>${hibernate.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

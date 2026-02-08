@@ -1,11 +1,12 @@
-
 package com.agnezdei.hotelmvc.util;
 
-import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
-import org.hibernate.cfg.AnnotationConfiguration;
+import org.hibernate.boot.Metadata;
+import org.hibernate.boot.MetadataSources;
+import org.hibernate.boot.registry.StandardServiceRegistry;
+import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 
 import com.agnezdei.hotelmvc.model.Booking;
 import com.agnezdei.hotelmvc.model.Guest;
@@ -13,45 +14,48 @@ import com.agnezdei.hotelmvc.model.GuestService;
 import com.agnezdei.hotelmvc.model.Room;
 import com.agnezdei.hotelmvc.model.Service;
 
-
 public class HibernateUtil {
     private static final SessionFactory sessionFactory;
     
     static {
         try {
-            sessionFactory = new AnnotationConfiguration()
-                .addPackage("com.agnezdei.hotelmvc.model")
-                .addAnnotatedClass(Guest.class)
-                .addAnnotatedClass(Room.class)
-                .addAnnotatedClass(Service.class)
-                .addAnnotatedClass(Booking.class)
-                .addAnnotatedClass(GuestService.class)
-                .configure()
-                .buildSessionFactory();
+            StandardServiceRegistry registry = new StandardServiceRegistryBuilder()
+                .configure("hibernate.cfg.xml")
+                .build();
+            
+            MetadataSources sources = new MetadataSources(registry);
+            
+            sources.addAnnotatedClass(Guest.class);
+            sources.addAnnotatedClass(Room.class);
+            sources.addAnnotatedClass(Service.class);
+            sources.addAnnotatedClass(Booking.class);
+            sources.addAnnotatedClass(GuestService.class);
+            
+            Metadata metadata = sources.getMetadataBuilder().build();
+            
+            sessionFactory = metadata.getSessionFactoryBuilder().build();
+            
         } catch (Throwable ex) {
             System.err.println("Ошибка инициализации Hibernate: " + ex);
+            ex.printStackTrace();
             throw new ExceptionInInitializerError(ex);
         }
     }
     
-    // Получить новую сессию
-    public static Session openSession() throws HibernateException {
+    public static Session openSession() {
         return sessionFactory.openSession();
     }
-    
-    // Получить фабрику сессий
+
     public static SessionFactory getSessionFactory() {
         return sessionFactory;
     }
     
-    // Закрыть фабрику сессий
     public static void shutdown() {
-        if (sessionFactory != null) {
+        if (sessionFactory != null && !sessionFactory.isClosed()) {
             sessionFactory.close();
         }
     }
     
-    // Вспомогательный метод для выполнения операции в транзакции
     public static <T> T executeInTransaction(TransactionOperation<T> operation) throws Exception {
         Session session = null;
         Transaction transaction = null;
@@ -64,7 +68,7 @@ public class HibernateUtil {
             transaction.commit();
             return result;
         } catch (Exception e) {
-            if (transaction != null) {
+            if (transaction != null && transaction.isActive()) {
                 transaction.rollback();
             }
             throw e;
@@ -75,7 +79,6 @@ public class HibernateUtil {
         }
     }
     
-    // Интерфейс для операции в транзакции
     @FunctionalInterface
     public interface TransactionOperation<T> {
         T execute(Session session) throws Exception;
