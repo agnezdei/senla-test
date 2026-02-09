@@ -1,6 +1,7 @@
 package com.agnezdei.hotelmvc;
 
 import com.agnezdei.hotelmvc.config.AppConfig;
+import com.agnezdei.hotelmvc.config.ConfigProcessor;
 import com.agnezdei.hotelmvc.config.DatabaseConfig;
 import com.agnezdei.hotelmvc.controller.HotelAdmin;
 import com.agnezdei.hotelmvc.controller.HotelReporter;
@@ -11,11 +12,11 @@ import com.agnezdei.hotelmvc.csv.GuestServiceCsvImporter;
 import com.agnezdei.hotelmvc.csv.RoomCsvImporter;
 import com.agnezdei.hotelmvc.csv.ServiceCsvImporter;
 import com.agnezdei.hotelmvc.di.DependencyContainer;
-import com.agnezdei.hotelmvc.repository.impl.BookingRepository;
-import com.agnezdei.hotelmvc.repository.impl.GuestRepository;
-import com.agnezdei.hotelmvc.repository.impl.GuestServiceRepository;
-import com.agnezdei.hotelmvc.repository.impl.RoomRepository;
-import com.agnezdei.hotelmvc.repository.impl.ServiceRepository;
+import com.agnezdei.hotelmvc.repository.BookingDAO;
+import com.agnezdei.hotelmvc.repository.GuestDAO;
+import com.agnezdei.hotelmvc.repository.GuestServiceDAO;
+import com.agnezdei.hotelmvc.repository.RoomDAO;
+import com.agnezdei.hotelmvc.repository.ServiceDAO;
 import com.agnezdei.hotelmvc.ui.ConsoleUI;
 
 public class HotelApp {
@@ -25,6 +26,7 @@ public class HotelApp {
         try {
             System.out.println("Загрузка конфигурации...");
             AppConfig config = new AppConfig();
+            ConfigProcessor.process(config);
             System.out.println("Конфигурация загружена:");
             System.out.println("  - Разрешено менять статус комнат: " + config.isAllowRoomStatusChange());
             System.out.println("  - Макс. записей истории: " + config.getMaxBookingHistoryEntries());
@@ -38,19 +40,21 @@ public class HotelApp {
             container.register(AppConfig.class, config);
             container.register(DatabaseConfig.class, dbConfig);
 
-            System.out.println("Создание репозиториев...");
-            RoomRepository roomRepo = new RoomRepository(dbConfig);
-            GuestRepository guestRepo = new GuestRepository(dbConfig);
-            ServiceRepository serviceRepo = new ServiceRepository(dbConfig);
-            GuestServiceRepository guestServiceRepo = new GuestServiceRepository(dbConfig);
-            BookingRepository bookingRepo = new BookingRepository(dbConfig);
+            System.out.println("Создание DAO репозиториев...");
 
-            container.register(BookingRepository.class, bookingRepo);
-            container.register(RoomRepository.class, roomRepo);
-            container.register(GuestRepository.class, guestRepo);
-            container.register(ServiceRepository.class, serviceRepo);
-            container.register(GuestServiceRepository.class, guestServiceRepo);
+            RoomDAO roomDAO = new RoomDAO();
+            GuestDAO guestDAO = new GuestDAO();
+            ServiceDAO serviceDAO = new ServiceDAO();
+            GuestServiceDAO guestServiceDAO = new GuestServiceDAO();
+            BookingDAO bookingDAO = new BookingDAO();
 
+            container.register(BookingDAO.class, bookingDAO);
+            container.register(RoomDAO.class, roomDAO);
+            container.register(GuestDAO.class, guestDAO);
+            container.register(ServiceDAO.class, serviceDAO);
+            container.register(GuestServiceDAO.class, guestServiceDAO);
+
+            System.out.println("Создание CSV сервисов...");
             CsvExporter csvExporter = new CsvExporter();
             RoomCsvImporter roomImporter = new RoomCsvImporter();
             GuestCsvImporter guestImporter = new GuestCsvImporter();
@@ -79,35 +83,38 @@ public class HotelApp {
             container.register(HotelAdmin.class, admin);
             container.register(HotelReporter.class, reporter);
 
-            System.out.println("\nПроверка состояния базы данных...");
+            System.out.println("Проверка состояния базы данных...");
             try {
-                int roomCount = roomRepo.findAll().size();
-                int guestCount = guestRepo.findAll().size();
-                int serviceCount = serviceRepo.findAll().size();
-                int bookingCount = bookingRepo.findAll().size();
+                int roomCount = roomDAO.findAll().size();
+                int guestCount = guestDAO.findAll().size();
+                int serviceCount = serviceDAO.findAll().size();
+                int bookingCount = bookingDAO.findAll().size();
+                int guestServiceCount = guestServiceDAO.findAll().size();
 
                 System.out.println("Найдено в базе данных:");
                 System.out.println("  - Комнат: " + roomCount);
                 System.out.println("  - Гостей: " + guestCount);
                 System.out.println("  - Услуг: " + serviceCount);
                 System.out.println("  - Бронирований: " + bookingCount);
+                System.out.println("  - Услуг гостей: " + guestServiceCount);
 
                 if (roomCount == 0 && guestCount == 0 && serviceCount == 0) {
                     System.out.println("\nБаза данных пуста. Инициализация из CSV файлов...");
                     initializeFromCsv(admin);
 
                     System.out.println("\nПосле импорта:");
-                    System.out.println("  - Комнат: " + roomRepo.findAll().size());
-                    System.out.println("  - Гостей: " + guestRepo.findAll().size());
-                    System.out.println("  - Услуг: " + serviceRepo.findAll().size());
-                    System.out.println("  - Бронирований: " + bookingRepo.findAll().size());
-                    System.out.println("  - Услуг гостя: " + guestServiceRepo.findAll().size());
+                    System.out.println("  - Комнат: " + roomDAO.findAll().size());
+                    System.out.println("  - Гостей: " + guestDAO.findAll().size());
+                    System.out.println("  - Услуг: " + serviceDAO.findAll().size());
+                    System.out.println("  - Бронирований: " + bookingDAO.findAll().size());
+                    System.out.println("  - Услуг гостей: " + guestServiceDAO.findAll().size());
                 } else {
                     System.out.println("\nИспользуется существующая база данных.");
                     System.out.println("Для импорта новых данных используйте соответствующие команды в меню.");
                 }
             } catch (Exception e) {
                 System.out.println("Ошибка при проверке базы данных: " + e.getMessage());
+                e.printStackTrace();
                 System.out.println("Продолжение работы...");
             }
 
@@ -143,14 +150,15 @@ public class HotelApp {
             System.out.println("Результат: " + admin.importBookingsFromCsv("data/bookings.csv"));
 
             try {
-                System.out.println("Импорт услуг гостя...");
+                System.out.println("Импорт услуг гостей...");
                 System.out.println("Результат: " + admin.importGuestServicesFromCsv("data/guest_services.csv"));
             } catch (Exception e) {
-                System.out.println("Файл booking_services.csv не найден или ошибка импорта: " + e.getMessage());
+                System.out.println("Файл guest_services.csv не найден или ошибка импорта: " + e.getMessage());
             }
 
         } catch (Exception e) {
             System.out.println("Ошибка при загрузке данных из CSV: " + e.getMessage());
+            e.printStackTrace();
             System.out.println("Продолжение работы с существующими данными в БД...");
         }
     }

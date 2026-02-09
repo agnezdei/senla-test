@@ -1,7 +1,7 @@
 package com.agnezdei.hotelmvc.config;
 
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.util.Properties;
 
@@ -44,16 +44,18 @@ public class ConfigProcessor {
         }
     }
 
-    private static Properties loadProperties(String configFileName) throws IOException {
+    private static Properties loadProperties(String configFileName) {
         Properties properties = new Properties();
-
-        try (FileInputStream input = new FileInputStream(configFileName)) {
-            properties.load(input);
+        
+        try (InputStream input = ConfigProcessor.class.getClassLoader().getResourceAsStream(configFileName)) {
+            if (input != null) {
+                properties.load(input);
+            }
         } catch (IOException e) {
-            System.err.println("Файл конфигурации не найден: " + configFileName +
+            System.err.println("Ошибка при чтении файла конфигурации: " + configFileName +
                     ". Используются значения по умолчанию.");
         }
-
+        
         return properties;
     }
 

@@ -4,143 +4,86 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.List;
 
-import com.agnezdei.hotelmvc.annotations.Inject;
-import com.agnezdei.hotelmvc.exceptions.DAOException;
-import com.agnezdei.hotelmvc.model.Booking;
-import com.agnezdei.hotelmvc.model.Guest;
-import com.agnezdei.hotelmvc.model.GuestService;
-import com.agnezdei.hotelmvc.model.Room;
-import com.agnezdei.hotelmvc.model.Service;
-import com.agnezdei.hotelmvc.repository.impl.BookingRepository;
-import com.agnezdei.hotelmvc.repository.impl.GuestRepository;
-import com.agnezdei.hotelmvc.repository.impl.GuestServiceRepository;
-import com.agnezdei.hotelmvc.repository.impl.RoomRepository;
-import com.agnezdei.hotelmvc.repository.impl.ServiceRepository;
+import com.agnezdei.hotelmvc.dto.BookingDTO;
+import com.agnezdei.hotelmvc.dto.GuestDTO;
+import com.agnezdei.hotelmvc.dto.GuestServiceDTO;
+import com.agnezdei.hotelmvc.dto.RoomDTO;
+import com.agnezdei.hotelmvc.dto.ServiceDTO;
 
 public class CsvExporter {
-    @Inject
-    private RoomRepository roomDAO;
-
-    @Inject
-    private GuestRepository guestDAO;
-
-    @Inject
-    private ServiceRepository serviceDAO;
-
-    @Inject
-    private BookingRepository bookingDAO;
-
-    @Inject
-    private GuestServiceRepository guestServiceDAO;
 
     public CsvExporter() {
     }
 
-    public void exportRooms(List<Room> rooms, String filePath) throws IOException {
-        try {
-            if (rooms == null) {
-                rooms = roomDAO.findAll();
-            }
+    public void exportRooms(List<RoomDTO> rooms, String filePath) throws IOException {
+        try (FileWriter writer = new FileWriter(filePath)) {
+            writer.write("Номер,Тип,Цена,Вместимость,Звезды,Статус\n");
 
-            try (FileWriter writer = new FileWriter(filePath)) {
-                writer.write("Номер,Тип,Цена,Вместимость,Звезды,Статус\n");
-
-                for (Room room : rooms) {
-                    writer.write(String.format("%s,%s,%.2f,%d,%d,%s\n",
-                            room.getNumber(),
-                            room.getType().name(),
-                            room.getPrice(),
-                            room.getCapacity(),
-                            room.getStars(),
-                            room.getStatus().name()));
-                }
+            for (RoomDTO room : rooms) {
+                writer.write(String.format("%s,%s,%.2f,%d,%d,%s\n",
+                        room.getNumber(),
+                        room.getType(),
+                        room.getPrice(),
+                        room.getCapacity(),
+                        room.getStars(),
+                        room.getStatus()));
             }
-        } catch (DAOException e) {
-            throw new IOException("Ошибка при получении комнат из базы данных: " + e.getMessage(), e);
         }
     }
 
-    public void exportGuests(List<Guest> guests, String filePath) throws IOException {
-        try {
-            if (guests == null) {
-                guests = guestDAO.findAll();
-            }
+    public void exportGuests(List<GuestDTO> guests, String filePath) throws IOException {
+        try (FileWriter writer = new FileWriter(filePath)) {
+            writer.write("Имя,Номер паспорта\n");
 
-            try (FileWriter writer = new FileWriter(filePath)) {
-                writer.write("Имя,Номер паспорта\n");
-
-                for (Guest guest : guests) {
-                    writer.write(String.format("%s,%s\n",
-                            guest.getName(),
-                            guest.getPassportNumber()));
-                }
+            for (GuestDTO guest : guests) {
+                writer.write(String.format("%s,%s\n",
+                        guest.getName(),
+                        guest.getPassportNumber()));
             }
-        } catch (DAOException e) {
-            throw new IOException("Ошибка при получении гостей из базы данных: " + e.getMessage(), e);
         }
     }
 
-    public void exportServices(List<Service> services, String filePath) throws IOException {
-        try {
-            if (services == null) {
-                services = serviceDAO.findAll();
-            }
+    public void exportServices(List<ServiceDTO> services, String filePath) throws IOException {
+        try (FileWriter writer = new FileWriter(filePath)) {
+            writer.write("Название,Цена,Категория\n");
 
-            try (FileWriter writer = new FileWriter(filePath)) {
-                writer.write("Название,Цена,Категория\n");
-
-                for (Service service : services) {
-                    writer.write(String.format("%s,%.2f,%s\n",
-                            service.getName(),
-                            service.getPrice(),
-                            service.getCategory().name()));
-                }
+            for (ServiceDTO service : services) {
+                writer.write(String.format("%s,%.2f,%s\n",
+                        service.getName(),
+                        service.getPrice(),
+                        service.getCategory()));
             }
-        } catch (DAOException e) {
-            throw new IOException("Ошибка при получении услуг из базы данных: " + e.getMessage(), e);
         }
     }
 
-    public void exportBookings(List<Booking> bookings, String filePath) throws IOException {
-        try {
-            if (bookings == null) {
-                bookings = bookingDAO.findAll();
-            }
+    public void exportBookings(List<BookingDTO> bookings, String filePath) throws IOException {
+        try (FileWriter writer = new FileWriter(filePath)) {
+            writer.write("ID,Гость,Номер комнаты,Дата заезда,Дата выезда,Активно\n");
 
-            try (FileWriter writer = new FileWriter(filePath)) {
-                writer.write("Паспорт гостя,Номер комнаты,Дата заезда,Дата выезда,Активно\n");
-
-                for (Booking booking : bookings) {
-                    writer.write(String.format("%s,%s,%s,%s,%s\n",
-                            booking.getGuest().getPassportNumber(),
-                            booking.getRoom().getNumber(),
-                            booking.getCheckInDate(),
-                            booking.getCheckOutDate(),
-                            booking.isActive()));
-                }
+            for (BookingDTO booking : bookings) {
+                writer.write(String.format("%d,%s,%s,%s,%s,%s\n",
+                        booking.getId(),
+                        booking.getGuestName(),
+                        booking.getRoomNumber(),
+                        booking.getCheckInDate(),
+                        booking.getCheckOutDate(),
+                        booking.isActive()));
             }
-        } catch (DAOException e) {
-            throw new IOException("Ошибка при получении бронирований из базы данных: " + e.getMessage(), e);
         }
     }
 
-    public void exportGuestServices(List<GuestService> guestServices, String filePath) throws IOException {
-        try {
-            if (guestServices == null) {
-                guestServices = guestServiceDAO.findAll();
-            }
+    public void exportGuestServices(List<GuestServiceDTO> guestServices, String filePath) throws IOException {
+        try (FileWriter writer = new FileWriter(filePath)) {
+            writer.write("ID,Гость,Услуга,Категория,Дата\n");
 
-            try (FileWriter writer = new FileWriter(filePath)) {
-                writer.write("Гость,Услуга\n");
-
-                for (GuestService guestService : guestServices) {
-                    writer.write(String.format("%s,%s\n",
-                            guestService.getGuest(),
-                            guestService.getService()));
-                }
+            for (GuestServiceDTO guestService : guestServices) {
+                writer.write(String.format("%d,%s,%s,%s,%s\n",
+                        guestService.getId(),
+                        guestService.getGuestName(),
+                        guestService.getServiceName(),
+                        guestService.getServiceCategory(),
+                        guestService.getServiceDate()));
             }
-        } catch (DAOException e) {
-            throw new IOException("Ошибка при получении услуг гостей из базы данных: " + e.getMessage(), e);
         }
     }
 }

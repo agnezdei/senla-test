@@ -5,6 +5,8 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
+import org.hibernate.Session;
+import org.hibernate.Transaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,9 +18,19 @@ import com.agnezdei.hotelmvc.csv.GuestCsvImporter;
 import com.agnezdei.hotelmvc.csv.GuestServiceCsvImporter;
 import com.agnezdei.hotelmvc.csv.RoomCsvImporter;
 import com.agnezdei.hotelmvc.csv.ServiceCsvImporter;
+import com.agnezdei.hotelmvc.dto.BookingDTO;
+import com.agnezdei.hotelmvc.dto.GuestDTO;
+import com.agnezdei.hotelmvc.dto.GuestServiceDTO;
+import com.agnezdei.hotelmvc.dto.RoomDTO;
+import com.agnezdei.hotelmvc.dto.ServiceDTO;
 import com.agnezdei.hotelmvc.exceptions.BusinessLogicException;
 import com.agnezdei.hotelmvc.exceptions.DAOException;
 import com.agnezdei.hotelmvc.exceptions.EntityNotFoundException;
+import com.agnezdei.hotelmvc.mapper.BookingMapper;
+import com.agnezdei.hotelmvc.mapper.GuestMapper;
+import com.agnezdei.hotelmvc.mapper.GuestServiceMapper;
+import com.agnezdei.hotelmvc.mapper.RoomMapper;
+import com.agnezdei.hotelmvc.mapper.ServiceMapper;
 import com.agnezdei.hotelmvc.model.Booking;
 import com.agnezdei.hotelmvc.model.Guest;
 import com.agnezdei.hotelmvc.model.GuestService;
@@ -27,27 +39,28 @@ import com.agnezdei.hotelmvc.model.RoomStatus;
 import com.agnezdei.hotelmvc.model.RoomType;
 import com.agnezdei.hotelmvc.model.Service;
 import com.agnezdei.hotelmvc.model.ServiceCategory;
-import com.agnezdei.hotelmvc.repository.impl.BookingRepository;
-import com.agnezdei.hotelmvc.repository.impl.GuestRepository;
-import com.agnezdei.hotelmvc.repository.impl.GuestServiceRepository;
-import com.agnezdei.hotelmvc.repository.impl.RoomRepository;
-import com.agnezdei.hotelmvc.repository.impl.ServiceRepository;
+import com.agnezdei.hotelmvc.repository.BookingDAO;
+import com.agnezdei.hotelmvc.repository.GuestDAO;
+import com.agnezdei.hotelmvc.repository.GuestServiceDAO;
+import com.agnezdei.hotelmvc.repository.RoomDAO;
+import com.agnezdei.hotelmvc.repository.ServiceDAO;
+import com.agnezdei.hotelmvc.util.HibernateUtil;
 
 public class HotelAdmin {
     @Inject
-    private RoomRepository roomDAO;
+    private RoomDAO roomDAO;
 
     @Inject
-    private GuestRepository guestDAO;
+    private GuestDAO guestDAO;
 
     @Inject
-    private ServiceRepository serviceDAO;
+    private ServiceDAO serviceDAO;
 
     @Inject
-    private BookingRepository bookingDAO;
+    private BookingDAO bookingDAO;
 
     @Inject
-    private GuestServiceRepository guestServiceDAO;
+    private GuestServiceDAO guestServiceDAO;
 
     @Inject
     private AppConfig config;
@@ -73,13 +86,14 @@ public class HotelAdmin {
     public HotelAdmin() {
     }
 
-   private static final Logger logger = LoggerFactory.getLogger(HotelAdmin.class);
+    private static final Logger logger = LoggerFactory.getLogger(HotelAdmin.class);
 
     public String exportRoomsToCsv(String filePath) {
         logger.info("Начало экспорта номеров в файл: {}", filePath);
         try {
             List<Room> rooms = roomDAO.findAll();
-            csvExporter.exportRooms(rooms, filePath);
+            List<RoomDTO> roomDTOs = RoomMapper.toDTOList(rooms);
+            csvExporter.exportRooms(roomDTOs, filePath);
             String result = "Успех: Номера экспортированы в " + filePath;
             logger.info(result);
             return result;
@@ -96,7 +110,8 @@ public class HotelAdmin {
         logger.info("Начало экспорта услуг в файл: {}", filePath);
         try {
             List<Service> services = serviceDAO.findAll();
-            csvExporter.exportServices(services, filePath);
+            List<ServiceDTO> serviceDTOs = ServiceMapper.toDTOList(services);
+            csvExporter.exportServices(serviceDTOs, filePath);
             String result = "Успех: Услуги экспортированы в " + filePath;
             logger.info(result);
             return result;
@@ -113,7 +128,8 @@ public class HotelAdmin {
         logger.info("Начало экспорта гостей в файл: {}", filePath);
         try {
             List<Guest> guests = guestDAO.findAll();
-            csvExporter.exportGuests(guests, filePath);
+            List<GuestDTO> guestDTOs = GuestMapper.toDTOList(guests);
+            csvExporter.exportGuests(guestDTOs, filePath);
             String result = "Успех: Гости экспортированы в " + filePath;
             logger.info(result);
             return result;
@@ -130,7 +146,8 @@ public class HotelAdmin {
         logger.info("Начало экспорта бронирований в файл: {}", filePath);
         try {
             List<Booking> bookings = bookingDAO.findAll();
-            csvExporter.exportBookings(bookings, filePath);
+            List<BookingDTO> bookingDTOs = BookingMapper.toDTOList(bookings);
+            csvExporter.exportBookings(bookingDTOs, filePath);
             String result = "Успех: Бронирования экспортированы в " + filePath;
             logger.info(result);
             return result;
@@ -143,12 +160,13 @@ public class HotelAdmin {
         }
     }
 
-    public String exportGuestServicesToCsv(String filePath) {
+        public String exportGuestServicesToCsv(String filePath) {
         logger.info("Начало экспорта услуг гостей в файл: {}", filePath);
         try {
             List<GuestService> guestServices = guestServiceDAO.findAll();
-            csvExporter.exportGuestServices(guestServices, filePath);
-            String result = "Успех: Гости экспортированы в " + filePath;
+            List<GuestServiceDTO> guestServiceDTOs = GuestServiceMapper.toDTOList(guestServices);
+            csvExporter.exportGuestServices(guestServiceDTOs, filePath);
+            String result = "Успех: Услуги гостей экспортированы в " + filePath;
             logger.info(result);
             return result;
         } catch (DAOException e) {
@@ -226,73 +244,78 @@ public class HotelAdmin {
         logger.info("Начало заселения: номер={}, гость={}, даты={}-{}",
                 roomNumber, guest.getName(), checkInDate, checkOutDate);
 
+        Session session = null;
+        Transaction transaction = null;
+        
         try {
-            Optional<Room> roomOpt = roomDAO.findByNumber(roomNumber);
+            session = HibernateUtil.openSession();
+            transaction = session.beginTransaction();
+
+            Optional<Room> roomOpt = roomDAO.findByNumber(roomNumber, session);
             if (roomOpt.isEmpty()) {
-                String errorMsg = "Номер " + roomNumber + " не найден";
-                logger.error(errorMsg);
-                throw new EntityNotFoundException(errorMsg);
+                throw new EntityNotFoundException("Номер " + roomNumber + " не найден");
             }
 
             Room room = roomOpt.get();
             if (room.getStatus() != RoomStatus.AVAILABLE) {
-                String errorMsg = "Номер " + roomNumber + " недоступен для заселения";
-                logger.error(errorMsg);
-                throw new BusinessLogicException(errorMsg);
+                throw new BusinessLogicException("Номер " + roomNumber + " недоступен для заселения");
             }
 
             if (checkInDate.isAfter(checkOutDate)) {
-                String errorMsg = "Дата заезда не может быть после даты выезда";
-                logger.error(errorMsg);
-                throw new BusinessLogicException(errorMsg);
+                throw new BusinessLogicException("Дата заезда не может быть после даты выезда");
             }
 
-            List<Booking> existingBookings = bookingDAO.findByRoomId(room.getId());
+            List<Booking> existingBookings = bookingDAO.findByRoomId(room.getId(), session);
             for (Booking existing : existingBookings) {
                 if (existing.isActive() && datesOverlap(existing.getCheckInDate(),
                         existing.getCheckOutDate(), checkInDate, checkOutDate)) {
-                    String errorMsg = "Номер уже забронирован на эти даты";
-                    logger.error(errorMsg);
-                    throw new BusinessLogicException(errorMsg);
+                    throw new BusinessLogicException("Номер уже забронирован на эти даты");
                 }
             }
 
-            Optional<Guest> existingGuest = guestDAO.findByPassportNumber(guest.getPassportNumber());
+            Optional<Guest> existingGuest = guestDAO.findByPassportNumber(guest.getPassportNumber(), session);
             Guest savedGuest;
 
             if (existingGuest.isPresent()) {
                 savedGuest = existingGuest.get();
                 if (!savedGuest.getName().equals(guest.getName())) {
                     savedGuest.setName(guest.getName());
-                    guestDAO.update(savedGuest);
-                    logger.info("Обновлены данные существующего гостя: {}", guest.getPassportNumber());
+                    guestDAO.update(savedGuest, session);
                 }
             } else {
-                savedGuest = guestDAO.save(guest);
-                logger.info("Создан новый гость: {}", guest.getPassportNumber());
+                savedGuest = guestDAO.save(guest, session);
             }
 
-            Booking booking = new Booking();
-            booking.setGuest(savedGuest);
-            booking.setRoom(room);
-            booking.setCheckInDate(checkInDate);
-            booking.setCheckOutDate(checkOutDate);
+            Booking booking = new Booking(savedGuest, room, checkInDate, checkOutDate);
             booking.setActive(true);
-
-            Booking savedBooking = bookingDAO.save(booking);
+            Booking savedBooking = bookingDAO.save(booking, session);
 
             room.setStatus(RoomStatus.OCCUPIED);
-            roomDAO.update(room);
+            roomDAO.update(room, session);
 
-            logger.info("Успешное заселение: номер={}, гость={}, ID={}",
-                    roomNumber, guest.getName(), savedBooking.getId());
+            transaction.commit();
 
-            return "Успех: " + savedGuest.getName() + " заселен в номер " + roomNumber +
+            String result = "Успех: " + savedGuest.getName() + " заселен в номер " + roomNumber +
                     " (бронирование ID: " + savedBooking.getId() + ")";
+            logger.info(result);
+            return result;
 
-        } catch (DAOException e) {
+        } catch (EntityNotFoundException | BusinessLogicException e) {
+            if (transaction != null) {
+                transaction.rollback();
+            }
+            logger.error("Ошибка при заселении: {}", e.getMessage(), e);
+            throw e;
+        } catch (Exception e) {
+            if (transaction != null) {
+                transaction.rollback();
+            }
             logger.error("Ошибка базы данных при заселении: {}", e.getMessage(), e);
             throw new BusinessLogicException("Ошибка базы данных: " + e.getMessage());
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
         }
     }
 
@@ -301,22 +324,24 @@ public class HotelAdmin {
 
         logger.info("Начало выселения из номера: {}", roomNumber);
 
+        Session session = null;
+        Transaction transaction = null;
+        
         try {
-            Optional<Room> roomOpt = roomDAO.findByNumber(roomNumber);
+            session = HibernateUtil.openSession();
+            transaction = session.beginTransaction();
+
+            Optional<Room> roomOpt = roomDAO.findByNumber(roomNumber, session);
             if (roomOpt.isEmpty()) {
-                String errorMsg = "Номер " + roomNumber + " не найден";
-                logger.error(errorMsg);
-                throw new EntityNotFoundException(errorMsg);
+                throw new EntityNotFoundException("Номер " + roomNumber + " не найден");
             }
 
             Room room = roomOpt.get();
             if (room.getStatus() != RoomStatus.OCCUPIED) {
-                String errorMsg = "Номер " + roomNumber + " не занят";
-                logger.error(errorMsg);
-                throw new BusinessLogicException(errorMsg);
+                throw new BusinessLogicException("Номер " + roomNumber + " не занят");
             }
 
-            List<Booking> bookings = bookingDAO.findByRoomId(room.getId());
+            List<Booking> bookings = bookingDAO.findByRoomId(room.getId(), session);
             Booking activeBooking = null;
 
             for (Booking booking : bookings) {
@@ -327,26 +352,38 @@ public class HotelAdmin {
             }
 
             if (activeBooking == null) {
-                String errorMsg = "В номере " + roomNumber + " нет активного бронирования";
-                logger.error(errorMsg);
-                throw new BusinessLogicException(errorMsg);
+                throw new BusinessLogicException("В номере " + roomNumber + " нет активного бронирования");
             }
 
             activeBooking.setActive(false);
-            bookingDAO.update(activeBooking);
+            bookingDAO.update(activeBooking, session);
 
             room.setStatus(RoomStatus.AVAILABLE);
-            roomDAO.update(room);
+            roomDAO.update(room, session);
+
+            transaction.commit();
 
             String result = "Успех: " + activeBooking.getGuest().getName() +
                     " выселен из номера " + roomNumber;
             logger.info(result);
-
             return result;
 
-        } catch (DAOException e) {
+        } catch (EntityNotFoundException | BusinessLogicException e) {
+            if (transaction != null) {
+                transaction.rollback();
+            }
+            logger.error("Ошибка при выселении: {}", e.getMessage(), e);
+            throw e;
+        } catch (Exception e) {
+            if (transaction != null) {
+                transaction.rollback();
+            }
             logger.error("Ошибка базы данных при выселении: {}", e.getMessage(), e);
             throw new BusinessLogicException("Ошибка базы данных: " + e.getMessage());
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
         }
     }
 
@@ -356,38 +393,51 @@ public class HotelAdmin {
         logger.info("Начало добавления услуги гостю: паспорт={}, услуга={}, дата={}",
                 guestPassport, serviceName, serviceDate);
 
+        Session session = null;
+        Transaction transaction = null;
+        
         try {
-            Optional<Guest> guestOpt = guestDAO.findByPassportNumber(guestPassport);
+            session = HibernateUtil.openSession();
+            transaction = session.beginTransaction();
+
+            Optional<Guest> guestOpt = guestDAO.findByPassportNumber(guestPassport, session);
             if (guestOpt.isEmpty()) {
-                String errorMsg = "Гость с паспортом " + guestPassport + " не найден";
-                logger.error(errorMsg);
-                throw new EntityNotFoundException(errorMsg);
+                throw new EntityNotFoundException("Гость с паспортом " + guestPassport + " не найден");
             }
 
-            Optional<Service> serviceOpt = serviceDAO.findByName(serviceName);
+            Optional<Service> serviceOpt = serviceDAO.findByName(serviceName, session);
             if (serviceOpt.isEmpty()) {
-                String errorMsg = "Услуга '" + serviceName + "' не найдена";
-                logger.error(errorMsg);
-                throw new EntityNotFoundException(errorMsg);
+                throw new EntityNotFoundException("Услуга '" + serviceName + "' не найдена");
             }
 
             Guest guest = guestOpt.get();
             Service service = serviceOpt.get();
 
-            GuestService guestService = new GuestService();
-            guestService.setGuest(guest);
-            guestService.setService(service);
-            guestService.setServiceDate(serviceDate);
+            GuestService guestService = new GuestService(guest, service, serviceDate);
+            guestServiceDAO.save(guestService, session);
 
-            guestServiceDAO.save(guestService);
+            transaction.commit();
 
             String result = "Успех: Услуга '" + serviceName + "' добавлена гостю " + guest.getName();
             logger.info(result);
-
             return result;
-        } catch (DAOException e) {
+            
+        } catch (EntityNotFoundException e) {
+            if (transaction != null) {
+                transaction.rollback();
+            }
+            logger.error("Ошибка при добавлении услуги гостю: {}", e.getMessage(), e);
+            throw e;
+        } catch (Exception e) {
+            if (transaction != null) {
+                transaction.rollback();
+            }
             logger.error("Ошибка базы данных при добавлении услуги гостю: {}", e.getMessage(), e);
             throw new BusinessLogicException("Ошибка базы данных: " + e.getMessage());
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
         }
     }
 
@@ -396,23 +446,42 @@ public class HotelAdmin {
 
         logger.info("Начало удаления услуги гостя: ID={}", guestServiceId);
 
+        Session session = null;
+        Transaction transaction = null;
+        
         try {
-            Optional<GuestService> guestServiceOpt = guestServiceDAO.findById(guestServiceId);
+            session = HibernateUtil.openSession();
+            transaction = session.beginTransaction();
+
+            Optional<GuestService> guestServiceOpt = guestServiceDAO.findById(guestServiceId, session);
             if (guestServiceOpt.isEmpty()) {
-                String errorMsg = "Заказ услуги не найден: ID=" + guestServiceId;
-                logger.error(errorMsg);
-                throw new EntityNotFoundException(errorMsg);
+                throw new EntityNotFoundException("Заказ услуги не найден: ID=" + guestServiceId);
             }
 
-            guestServiceDAO.delete(guestServiceId);
+            guestServiceDAO.delete(guestServiceId, session);
+
+            transaction.commit();
 
             String result = "Успех: Услуга удалена из заказов гостя";
             logger.info(result);
-
             return result;
-        } catch (DAOException e) {
+            
+        } catch (EntityNotFoundException e) {
+            if (transaction != null) {
+                transaction.rollback();
+            }
+            logger.error("Ошибка при удалении услуги гостя: {}", e.getMessage(), e);
+            throw e;
+        } catch (Exception e) {
+            if (transaction != null) {
+                transaction.rollback();
+            }
             logger.error("Ошибка базы данных при удалении услуги гостя: {}", e.getMessage(), e);
             throw new BusinessLogicException("Ошибка базы данных: " + e.getMessage());
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
         }
     }
 
@@ -421,39 +490,53 @@ public class HotelAdmin {
 
         logger.info("Начало перевода номера на ремонт: номер={}", roomNumber);
 
+        Session session = null;
+        Transaction transaction = null;
+        
         try {
-            Optional<Room> roomOpt = roomDAO.findByNumber(roomNumber);
+            session = HibernateUtil.openSession();
+            transaction = session.beginTransaction();
+
+            Optional<Room> roomOpt = roomDAO.findByNumber(roomNumber, session);
             if (roomOpt.isEmpty()) {
-                String errorMsg = "Номер " + roomNumber + " не найден";
-                logger.error(errorMsg);
-                throw new EntityNotFoundException(errorMsg);
+                throw new EntityNotFoundException("Номер " + roomNumber + " не найден");
             }
 
             if (!config.isAllowRoomStatusChange()) {
-                String errorMsg = "Изменение статуса номеров запрещено в настройках";
-                logger.error(errorMsg);
-                throw new BusinessLogicException(errorMsg);
+                throw new BusinessLogicException("Изменение статуса номеров запрещено в настройках");
             }
 
             Room room = roomOpt.get();
 
             if (room.getStatus() == RoomStatus.OCCUPIED) {
-                String errorMsg = "Нельзя перевести занятый номер на ремонт";
-                logger.error(errorMsg);
-                throw new BusinessLogicException(errorMsg);
+                throw new BusinessLogicException("Нельзя перевести занятый номер на ремонт");
             }
 
             room.setStatus(RoomStatus.UNDER_MAINTENANCE);
-            roomDAO.update(room);
+            roomDAO.update(room, session);
+
+            transaction.commit();
 
             String result = "Успех: Номер " + roomNumber + " переведен на ремонт";
             logger.info(result);
-
             return result;
 
-        } catch (DAOException e) {
+        } catch (EntityNotFoundException | BusinessLogicException e) {
+            if (transaction != null) {
+                transaction.rollback();
+            }
+            logger.error("Ошибка при переводе номера на ремонт: {}", e.getMessage(), e);
+            throw e;
+        } catch (Exception e) {
+            if (transaction != null) {
+                transaction.rollback();
+            }
             logger.error("Ошибка базы данных при переводе номера на ремонт: {}", e.getMessage(), e);
             throw new BusinessLogicException("Ошибка базы данных: " + e.getMessage());
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
         }
     }
 
@@ -462,39 +545,53 @@ public class HotelAdmin {
 
         logger.info("Начало перевода номера в доступные: номер={}", roomNumber);
 
+        Session session = null;
+        Transaction transaction = null;
+        
         try {
-            Optional<Room> roomOpt = roomDAO.findByNumber(roomNumber);
+            session = HibernateUtil.openSession();
+            transaction = session.beginTransaction();
+
+            Optional<Room> roomOpt = roomDAO.findByNumber(roomNumber, session);
             if (roomOpt.isEmpty()) {
-                String errorMsg = "Номер " + roomNumber + " не найден";
-                logger.error(errorMsg);
-                throw new EntityNotFoundException(errorMsg);
+                throw new EntityNotFoundException("Номер " + roomNumber + " не найден");
             }
 
             if (!config.isAllowRoomStatusChange()) {
-                String errorMsg = "Изменение статуса номеров запрещено в настройках";
-                logger.error(errorMsg);
-                throw new BusinessLogicException(errorMsg);
+                throw new BusinessLogicException("Изменение статуса номеров запрещено в настройках");
             }
 
             Room room = roomOpt.get();
 
             if (room.getStatus() == RoomStatus.OCCUPIED) {
-                String errorMsg = "Номер занят. Сначала выселите гостя";
-                logger.error(errorMsg);
-                throw new BusinessLogicException(errorMsg);
+                throw new BusinessLogicException("Номер занят. Сначала выселите гостя");
             }
 
             room.setStatus(RoomStatus.AVAILABLE);
-            roomDAO.update(room);
+            roomDAO.update(room, session);
+
+            transaction.commit();
 
             String result = "Успех: Номер " + roomNumber + " доступен для бронирования";
             logger.info(result);
-
             return result;
 
-        } catch (DAOException e) {
+        } catch (EntityNotFoundException | BusinessLogicException e) {
+            if (transaction != null) {
+                transaction.rollback();
+            }
+            logger.error("Ошибка при переводе номера в доступные: {}", e.getMessage(), e);
+            throw e;
+        } catch (Exception e) {
+            if (transaction != null) {
+                transaction.rollback();
+            }
             logger.error("Ошибка базы данных при переводе номера в доступные: {}", e.getMessage(), e);
             throw new BusinessLogicException("Ошибка базы данных: " + e.getMessage());
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
         }
     }
 
@@ -503,26 +600,44 @@ public class HotelAdmin {
 
         logger.info("Начало изменения цены номера: номер={}, новая цена={}", roomNumber, newPrice);
 
+        Session session = null;
+        Transaction transaction = null;
+        
         try {
-            Optional<Room> roomOpt = roomDAO.findByNumber(roomNumber);
+            session = HibernateUtil.openSession();
+            transaction = session.beginTransaction();
+
+            Optional<Room> roomOpt = roomDAO.findByNumber(roomNumber, session);
             if (roomOpt.isEmpty()) {
-                String errorMsg = "Номер " + roomNumber + " не найден";
-                logger.error(errorMsg);
-                throw new EntityNotFoundException(errorMsg);
+                throw new EntityNotFoundException("Номер " + roomNumber + " не найден");
             }
 
             Room room = roomOpt.get();
             room.setPrice(newPrice);
-            roomDAO.update(room);
+            roomDAO.update(room, session);
+
+            transaction.commit();
 
             String result = "Успех: Цена номера " + roomNumber + " изменена на " + newPrice + " руб.";
             logger.info(result);
-
             return result;
 
-        } catch (DAOException e) {
+        } catch (EntityNotFoundException e) {
+            if (transaction != null) {
+                transaction.rollback();
+            }
+            logger.error("Ошибка при изменении цены номера: {}", e.getMessage(), e);
+            throw e;
+        } catch (Exception e) {
+            if (transaction != null) {
+                transaction.rollback();
+            }
             logger.error("Ошибка базы данных при изменении цены номера: {}", e.getMessage(), e);
             throw new BusinessLogicException("Ошибка базы данных: " + e.getMessage());
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
         }
     }
 
@@ -531,26 +646,44 @@ public class HotelAdmin {
 
         logger.info("Начало изменения цены услуги: услуга={}, новая цена={}", serviceName, newPrice);
 
+        Session session = null;
+        Transaction transaction = null;
+        
         try {
-            Optional<Service> serviceOpt = serviceDAO.findByName(serviceName);
+            session = HibernateUtil.openSession();
+            transaction = session.beginTransaction();
+
+            Optional<Service> serviceOpt = serviceDAO.findByName(serviceName, session);
             if (serviceOpt.isEmpty()) {
-                String errorMsg = "Услуга '" + serviceName + "' не найдена";
-                logger.error(errorMsg);
-                throw new EntityNotFoundException(errorMsg);
+                throw new EntityNotFoundException("Услуга '" + serviceName + "' не найдена");
             }
 
             Service service = serviceOpt.get();
             service.setPrice(newPrice);
-            serviceDAO.update(service);
+            serviceDAO.update(service, session);
+
+            transaction.commit();
 
             String result = "Успех: Цена услуги '" + serviceName + "' изменена на " + newPrice + " руб.";
             logger.info(result);
-
             return result;
 
-        } catch (DAOException e) {
+        } catch (EntityNotFoundException e) {
+            if (transaction != null) {
+                transaction.rollback();
+            }
+            logger.error("Ошибка при изменении цены услуги: {}", e.getMessage(), e);
+            throw e;
+        } catch (Exception e) {
+            if (transaction != null) {
+                transaction.rollback();
+            }
             logger.error("Ошибка базы данных при изменении цены услуги: {}", e.getMessage(), e);
             throw new BusinessLogicException("Ошибка базы данных: " + e.getMessage());
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
         }
     }
 
@@ -560,32 +693,44 @@ public class HotelAdmin {
         logger.info("Начало добавления номера: номер={}, тип={}, цена={}, вместимость={}, звезды={}",
                 number, type, price, capacity, stars);
 
+        Session session = null;
+        Transaction transaction = null;
+        
         try {
-            Optional<Room> existingRoom = roomDAO.findByNumber(number);
+            session = HibernateUtil.openSession();
+            transaction = session.beginTransaction();
+
+            Optional<Room> existingRoom = roomDAO.findByNumber(number, session);
             if (existingRoom.isPresent()) {
-                String errorMsg = "Номер " + number + " уже существует";
-                logger.error(errorMsg);
-                throw new BusinessLogicException(errorMsg);
+                throw new BusinessLogicException("Номер " + number + " уже существует");
             }
 
-            Room room = new Room();
-            room.setNumber(number);
-            room.setType(type);
-            room.setPrice(price);
-            room.setCapacity(capacity);
-            room.setStars(stars);
+            Room room = new Room(number, type, price, capacity, stars);
             room.setStatus(RoomStatus.AVAILABLE);
+            roomDAO.save(room, session);
 
-            roomDAO.save(room);
+            transaction.commit();
 
             String result = "Успех: Добавлен номер " + number;
             logger.info(result);
-
             return result;
 
-        } catch (DAOException e) {
+        } catch (BusinessLogicException e) {
+            if (transaction != null) {
+                transaction.rollback();
+            }
+            logger.error("Ошибка при добавлении номера: {}", e.getMessage(), e);
+            throw e;
+        } catch (Exception e) {
+            if (transaction != null) {
+                transaction.rollback();
+            }
             logger.error("Ошибка базы данных при добавлении номера: {}", e.getMessage(), e);
             throw new BusinessLogicException("Ошибка базы данных: " + e.getMessage());
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
         }
     }
 
@@ -595,41 +740,68 @@ public class HotelAdmin {
         logger.info("Начало добавления услуги: название={}, цена={}, категория={}",
                 name, price, category);
 
+        Session session = null;
+        Transaction transaction = null;
+        
         try {
-            Optional<Service> existingService = serviceDAO.findByName(name);
+            session = HibernateUtil.openSession();
+            transaction = session.beginTransaction();
+
+            Optional<Service> existingService = serviceDAO.findByName(name, session);
             if (existingService.isPresent()) {
-                String errorMsg = "Услуга '" + name + "' уже существует";
-                logger.error(errorMsg);
-                throw new BusinessLogicException(errorMsg);
+                throw new BusinessLogicException("Услуга '" + name + "' уже существует");
             }
 
-            Service service = new Service();
-            service.setName(name);
-            service.setPrice(price);
-            service.setCategory(category);
+            Service service = new Service(name, price, category);
+            serviceDAO.save(service, session);
 
-            serviceDAO.save(service);
+            transaction.commit();
 
             String result = "Успех: Добавлена услуга '" + name + "'";
             logger.info(result);
-
             return result;
 
-        } catch (DAOException e) {
+        } catch (BusinessLogicException e) {
+            if (transaction != null) {
+                transaction.rollback();
+            }
+            logger.error("Ошибка при добавлении услуги: {}", e.getMessage(), e);
+            throw e;
+        } catch (Exception e) {
+            if (transaction != null) {
+                transaction.rollback();
+            }
             logger.error("Ошибка базы данных при добавлении услуги: {}", e.getMessage(), e);
             throw new BusinessLogicException("Ошибка базы данных: " + e.getMessage());
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
         }
     }
 
-    public List<GuestService> getGuestServices(Long guestId) throws BusinessLogicException {
+    public List<GuestServiceDTO> getGuestServices(Long guestId) throws BusinessLogicException {
         logger.info("Начало получения услуг гостя: ID={}", guestId);
 
         try {
             List<GuestService> services = guestServiceDAO.findByGuestId(guestId);
             logger.info("Получено услуг для гостя ID={}: {}", guestId, services.size());
-            return services;
+            return GuestServiceMapper.toDTOList(services);
         } catch (DAOException e) {
             logger.error("Ошибка базы данных при получении услуг гостя: {}", e.getMessage(), e);
+            throw new BusinessLogicException("Ошибка базы данных: " + e.getMessage());
+        }
+    }
+
+    public List<GuestServiceDTO> getGuestServicesByName(String guestName) throws BusinessLogicException {
+        logger.info("Начало получения услуг гостя по имени: {}", guestName);
+
+        try {
+            List<GuestService> services = guestServiceDAO.findByGuestNameOrderedByDate(guestName);
+            logger.info("Получено услуг для гостя {}: {}", guestName, services.size());
+            return GuestServiceMapper.toDTOList(services);
+        } catch (DAOException e) {
+            logger.error("Ошибка базы данных при получении услуг гостя по имени: {}", e.getMessage(), e);
             throw new BusinessLogicException("Ошибка базы данных: " + e.getMessage());
         }
     }

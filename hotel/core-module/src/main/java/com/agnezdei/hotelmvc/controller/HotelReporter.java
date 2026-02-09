@@ -15,27 +15,27 @@ import com.agnezdei.hotelmvc.model.Room;
 import com.agnezdei.hotelmvc.model.RoomType;
 import com.agnezdei.hotelmvc.model.Service;
 import com.agnezdei.hotelmvc.model.ServiceCategory;
-import com.agnezdei.hotelmvc.repository.impl.BookingRepository;
-import com.agnezdei.hotelmvc.repository.impl.GuestRepository;
-import com.agnezdei.hotelmvc.repository.impl.GuestServiceRepository;
-import com.agnezdei.hotelmvc.repository.impl.RoomRepository;
-import com.agnezdei.hotelmvc.repository.impl.ServiceRepository;
+import com.agnezdei.hotelmvc.repository.BookingDAO;
+import com.agnezdei.hotelmvc.repository.GuestDAO;
+import com.agnezdei.hotelmvc.repository.GuestServiceDAO;
+import com.agnezdei.hotelmvc.repository.RoomDAO;
+import com.agnezdei.hotelmvc.repository.ServiceDAO;
 
 public class HotelReporter {
     @Inject
-    private RoomRepository roomDAO;
+    private RoomDAO roomDAO;
 
     @Inject
-    private GuestRepository guestDAO;
+    private GuestDAO guestDAO;
 
     @Inject
-    private ServiceRepository serviceDAO;
+    private ServiceDAO serviceDAO;
 
     @Inject
-    private BookingRepository bookingDAO;
+    private BookingDAO bookingDAO;
 
     @Inject
-    private GuestServiceRepository guestServiceDAO;
+    private GuestServiceDAO guestServiceDAO;
 
     private static final Logger logger = LoggerFactory.getLogger(HotelReporter.class);
 
