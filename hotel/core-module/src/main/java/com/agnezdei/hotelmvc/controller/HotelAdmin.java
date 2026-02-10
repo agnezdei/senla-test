@@ -9,8 +9,9 @@ import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
-import com.agnezdei.hotelmvc.annotations.Inject;
 import com.agnezdei.hotelmvc.config.AppConfig;
 import com.agnezdei.hotelmvc.csv.BookingCsvImporter;
 import com.agnezdei.hotelmvc.csv.CsvExporter;
@@ -46,41 +47,42 @@ import com.agnezdei.hotelmvc.repository.RoomDAO;
 import com.agnezdei.hotelmvc.repository.ServiceDAO;
 import com.agnezdei.hotelmvc.util.HibernateUtil;
 
+@Component
 public class HotelAdmin {
-    @Inject
+    @Autowired
     private RoomDAO roomDAO;
 
-    @Inject
+    @Autowired
     private GuestDAO guestDAO;
 
-    @Inject
+    @Autowired
     private ServiceDAO serviceDAO;
 
-    @Inject
+    @Autowired
     private BookingDAO bookingDAO;
 
-    @Inject
+    @Autowired
     private GuestServiceDAO guestServiceDAO;
 
-    @Inject
+    @Autowired
     private AppConfig config;
 
-    @Inject
+    @Autowired
     private CsvExporter csvExporter;
 
-    @Inject
+    @Autowired
     private RoomCsvImporter roomImporter;
 
-    @Inject
+    @Autowired
     private GuestCsvImporter guestImporter;
 
-    @Inject
+    @Autowired
     private ServiceCsvImporter serviceImporter;
 
-    @Inject
+    @Autowired
     private BookingCsvImporter bookingImporter;
 
-    @Inject
+    @Autowired
     private GuestServiceCsvImporter guestServiceImporter;
 
     public HotelAdmin() {

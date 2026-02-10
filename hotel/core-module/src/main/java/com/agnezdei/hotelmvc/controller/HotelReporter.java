@@ -6,8 +6,9 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
-import com.agnezdei.hotelmvc.annotations.Inject;
 import com.agnezdei.hotelmvc.model.Booking;
 import com.agnezdei.hotelmvc.model.Guest;
 import com.agnezdei.hotelmvc.model.GuestService;
@@ -21,20 +22,21 @@ import com.agnezdei.hotelmvc.repository.GuestServiceDAO;
 import com.agnezdei.hotelmvc.repository.RoomDAO;
 import com.agnezdei.hotelmvc.repository.ServiceDAO;
 
+@Component
 public class HotelReporter {
-    @Inject
+    @Autowired
     private RoomDAO roomDAO;
 
-    @Inject
+    @Autowired
     private GuestDAO guestDAO;
 
-    @Inject
+    @Autowired
     private ServiceDAO serviceDAO;
 
-    @Inject
+    @Autowired
     private BookingDAO bookingDAO;
 
-    @Inject
+    @Autowired
     private GuestServiceDAO guestServiceDAO;
 
     private static final Logger logger = LoggerFactory.getLogger(HotelReporter.class);
