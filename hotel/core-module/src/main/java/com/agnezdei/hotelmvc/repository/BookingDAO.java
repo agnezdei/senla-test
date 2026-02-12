@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import  org.hibernate.Session;
+import org.springframework.stereotype.Repository;
 
 import com.agnezdei.hotelmvc.exceptions.DAOException;
 import com.agnezdei.hotelmvc.model.Booking;
@@ -11,8 +12,8 @@ import com.agnezdei.hotelmvc.util.HibernateUtil;
 
 import jakarta.persistence.Query;
 
+@Repository
 public class BookingDAO extends AbstractHibernateDAO<Booking, Long> {
-
     public BookingDAO() {
         super();
     }

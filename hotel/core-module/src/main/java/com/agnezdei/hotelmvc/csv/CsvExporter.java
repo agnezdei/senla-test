@@ -4,12 +4,15 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.List;
 
+import org.springframework.stereotype.Component;
+
 import com.agnezdei.hotelmvc.dto.BookingDTO;
 import com.agnezdei.hotelmvc.dto.GuestDTO;
 import com.agnezdei.hotelmvc.dto.GuestServiceDTO;
 import com.agnezdei.hotelmvc.dto.RoomDTO;
 import com.agnezdei.hotelmvc.dto.ServiceDTO;
 
+@Component
 public class CsvExporter {
 
     public CsvExporter() {

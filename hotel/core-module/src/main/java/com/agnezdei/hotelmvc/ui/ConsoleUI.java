@@ -5,7 +5,9 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.Scanner;
 
-import com.agnezdei.hotelmvc.annotations.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
 import com.agnezdei.hotelmvc.controller.HotelAdmin;
 import com.agnezdei.hotelmvc.controller.HotelReporter;
 import com.agnezdei.hotelmvc.exceptions.BusinessLogicException;
@@ -14,10 +16,11 @@ import com.agnezdei.hotelmvc.model.Guest;
 import com.agnezdei.hotelmvc.model.RoomType;
 import com.agnezdei.hotelmvc.model.ServiceCategory;
 
+@Component
 public class ConsoleUI {
-    @Inject
+    @Autowired
     private HotelAdmin admin;
-    @Inject
+    @Autowired
     private HotelReporter reporter;
     private Scanner scanner;
     private DateTimeFormatter dateFormatter;

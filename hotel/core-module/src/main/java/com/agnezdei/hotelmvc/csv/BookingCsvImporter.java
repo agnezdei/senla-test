@@ -10,8 +10,9 @@ import java.util.Optional;
 
 import org.hibernate.Session;
 import org.hibernate.Transaction;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
-import com.agnezdei.hotelmvc.annotations.Inject;
 import com.agnezdei.hotelmvc.model.Booking;
 import com.agnezdei.hotelmvc.model.Guest;
 import com.agnezdei.hotelmvc.model.Room;
@@ -21,12 +22,13 @@ import com.agnezdei.hotelmvc.repository.GuestDAO;
 import com.agnezdei.hotelmvc.repository.RoomDAO;
 import com.agnezdei.hotelmvc.util.HibernateUtil;
 
+@Component
 public class BookingCsvImporter {
-    @Inject
+    @Autowired
     private BookingDAO bookingDAO;
-    @Inject
+    @Autowired
     private GuestDAO guestDAO;
-    @Inject
+    @Autowired
     private RoomDAO roomDAO;
 
     public BookingCsvImporter() {

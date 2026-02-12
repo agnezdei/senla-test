@@ -9,16 +9,18 @@ import java.util.Optional;
 
 import org.hibernate.Session;
 import org.hibernate.Transaction;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
-import com.agnezdei.hotelmvc.annotations.Inject;
 import com.agnezdei.hotelmvc.model.Room;
 import com.agnezdei.hotelmvc.model.RoomStatus;
 import com.agnezdei.hotelmvc.model.RoomType;
 import com.agnezdei.hotelmvc.repository.RoomDAO;
 import com.agnezdei.hotelmvc.util.HibernateUtil;
 
+@Component
 public class RoomCsvImporter {
-    @Inject
+    @Autowired
     private RoomDAO roomDAO;
 
     private RoomType parseRoomType(String typeStr) {
