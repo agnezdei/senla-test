@@ -1,6 +1,6 @@
 -- 1. Таблица гостей
 CREATE TABLE IF NOT EXISTS guest (
-    id SERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     passport_number VARCHAR(50) UNIQUE NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -8,11 +8,11 @@ CREATE TABLE IF NOT EXISTS guest (
 
 -- 2. Таблица номеров
 CREATE TABLE IF NOT EXISTS room (
-    id SERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     number VARCHAR(10) NOT NULL UNIQUE,
     type VARCHAR(20) NOT NULL,  -- STANDARD, DELUXE, LUXURY
     status VARCHAR(20) NOT NULL DEFAULT 'AVAILABLE',  -- AVAILABLE, OCCUPIED, UNDER MAINTENANCE
-    price DECIMAL(10, 2) NOT NULL,
+    price DOUBLE PRECISION NOT NULL,
     capacity INTEGER NOT NULL,
     stars INTEGER CHECK (stars BETWEEN 1 AND 5),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -22,9 +22,9 @@ CREATE TABLE IF NOT EXISTS room (
 
 -- 3. Таблица услуг
 CREATE TABLE IF NOT EXISTS service (
-    id SERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
-    price DECIMAL(10, 2) NOT NULL,
+    price DOUBLE PRECISION NOT NULL,
     category VARCHAR(20) NOT NULL,  -- FOOD, CLEANING, COMFORT
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT service_price_non_negative CHECK (price >= 0)
@@ -32,9 +32,9 @@ CREATE TABLE IF NOT EXISTS service (
 
 -- 4. Таблица бронирований
 CREATE TABLE IF NOT EXISTS booking (
-    id SERIAL PRIMARY KEY,
-    guest_id INTEGER NOT NULL,
-    room_id INTEGER NOT NULL,
+    id BIGSERIAL PRIMARY KEY,
+    guest_id BIGINT NOT NULL,
+    room_id BIGINT NOT NULL,
     check_in_date DATE NOT NULL,
     check_out_date DATE NOT NULL,
     is_active BOOLEAN DEFAULT TRUE,
@@ -46,9 +46,9 @@ CREATE TABLE IF NOT EXISTS booking (
 
 -- 5. Таблица guest_service
 CREATE TABLE IF NOT EXISTS guest_service (
-    id SERIAL PRIMARY KEY,
-    guest_id INTEGER NOT NULL,
-    service_id INTEGER NOT NULL,
+    id BIGSERIAL PRIMARY KEY,
+    guest_id BIGINT NOT NULL,
+    service_id BIGINT NOT NULL,
     service_date DATE NOT NULL,
     
     FOREIGN KEY (guest_id) REFERENCES guest(id) ON DELETE CASCADE,
