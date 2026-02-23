@@ -1,5 +1,13 @@
 package com.agnezdei.hotelmvc.csv;
 
+import com.agnezdei.hotelmvc.model.Room;
+import com.agnezdei.hotelmvc.model.RoomStatus;
+import com.agnezdei.hotelmvc.model.RoomType;
+import com.agnezdei.hotelmvc.repository.RoomDAO;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -7,19 +15,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import org.hibernate.Session;
-import org.hibernate.Transaction;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
-import com.agnezdei.hotelmvc.model.Room;
-import com.agnezdei.hotelmvc.model.RoomStatus;
-import com.agnezdei.hotelmvc.model.RoomType;
-import com.agnezdei.hotelmvc.repository.RoomDAO;
-import com.agnezdei.hotelmvc.util.HibernateUtil;
-
 @Component
 public class RoomCsvImporter {
+
     @Autowired
     private RoomDAO roomDAO;
 
@@ -69,64 +67,43 @@ public class RoomCsvImporter {
         }
     }
 
-    public RoomCsvImporter() {
-    }
-
+    @Transactional
     public String importRooms(String filePath) {
-        Session session = null;
-        Transaction transaction = null;
-        try {
-            session = HibernateUtil.openSession();
-            transaction = session.beginTransaction();
-            
-            String result = importRooms(filePath, session);
-            
-            transaction.commit();
-            return result;
-        } catch (Exception e) {
-            if (transaction != null) transaction.rollback();
-            return "Ошибка при импорте номеров: " + e.getMessage();
-        } finally {
-            if (session != null && session.isOpen()) {
-                session.close();
-            }
-        }
-    }
-
-    public String importRooms(String filePath, Session session) {
         List<String> errors = new ArrayList<>();
         int imported = 0;
         int updated = 0;
 
         try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
-            String line = reader.readLine();
+            String line = reader.readLine(); // пропускаем заголовок
 
+            int lineNum = 1;
             while ((line = reader.readLine()) != null) {
+                lineNum++;
                 try {
                     String[] data = line.split(",");
                     if (data.length < 6) {
-                        errors.add("Недостаточно данных в строке: " + line);
+                        errors.add("Строка " + lineNum + ": Недостаточно данных (" + data.length + " из 6)");
                         continue;
                     }
 
-                    String number = data[0];
-                    RoomType type = parseRoomType(data[1]);
-                    double price = Double.parseDouble(data[2]);
-                    int capacity = Integer.parseInt(data[3]);
-                    int stars = Integer.parseInt(data[4]);
-                    RoomStatus status = parseRoomStatus(data[5]);
+                    String number = data[0].trim();
+                    RoomType type = parseRoomType(data[1].trim());
+                    double price = Double.parseDouble(data[2].trim());
+                    int capacity = Integer.parseInt(data[3].trim());
+                    int stars = Integer.parseInt(data[4].trim());
+                    RoomStatus status = parseRoomStatus(data[5].trim());
 
-                    Optional<Room> existingRoomOpt = roomDAO.findByNumber(number, session);
+                    Optional<Room> existingRoomOpt = roomDAO.findByNumber(number);
 
                     if (existingRoomOpt.isPresent()) {
                         Room room = existingRoomOpt.get();
-                        room.setPrice(price);
                         room.setType(type);
+                        room.setPrice(price);
                         room.setCapacity(capacity);
                         room.setStars(stars);
                         room.setStatus(status);
 
-                        roomDAO.update(room, session);
+                        roomDAO.update(room);
                         updated++;
                     } else {
                         Room room = new Room();
@@ -137,12 +114,12 @@ public class RoomCsvImporter {
                         room.setStars(stars);
                         room.setStatus(status);
 
-                        roomDAO.save(room, session);
+                        roomDAO.save(room);
                         imported++;
                     }
 
                 } catch (Exception e) {
-                    errors.add("Ошибка в строке: " + line + " - " + e.getMessage());
+                    errors.add("Строка " + lineNum + ": " + e.getMessage() + " - " + line);
                 }
             }
 

@@ -8,10 +8,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import org.hibernate.Session;
-import org.hibernate.Transaction;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.agnezdei.hotelmvc.model.Guest;
 import com.agnezdei.hotelmvc.model.GuestService;
@@ -19,10 +18,10 @@ import com.agnezdei.hotelmvc.model.Service;
 import com.agnezdei.hotelmvc.repository.GuestDAO;
 import com.agnezdei.hotelmvc.repository.GuestServiceDAO;
 import com.agnezdei.hotelmvc.repository.ServiceDAO;
-import com.agnezdei.hotelmvc.util.HibernateUtil;
 
 @Component
 public class GuestServiceCsvImporter {
+
     @Autowired
     private GuestServiceDAO guestServiceDAO;
     @Autowired
@@ -30,36 +29,13 @@ public class GuestServiceCsvImporter {
     @Autowired
     private ServiceDAO serviceDAO;
 
-    public GuestServiceCsvImporter() {
-    }
-
+    @Transactional
     public String importGuestServices(String filePath) {
-        Session session = null;
-        Transaction transaction = null;
-        try {
-            session = HibernateUtil.openSession();
-            transaction = session.beginTransaction();
-            
-            String result = importGuestServices(filePath, session);
-            
-            transaction.commit();
-            return result;
-        } catch (Exception e) {
-            if (transaction != null) transaction.rollback();
-            return "Ошибка при импорте услуг гостей: " + e.getMessage();
-        } finally {
-            if (session != null && session.isOpen()) {
-                session.close();
-            }
-        }
-    }
-
-    public String importGuestServices(String filePath, Session session) {
         List<String> errors = new ArrayList<>();
         int imported = 0;
 
         try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
-            String line = reader.readLine();
+            String line = reader.readLine(); // пропускаем заголовок
 
             int lineNum = 1;
             while ((line = reader.readLine()) != null) {
@@ -75,13 +51,13 @@ public class GuestServiceCsvImporter {
                     String serviceName = data[1].trim();
                     LocalDate serviceDate = LocalDate.parse(data[2].trim());
 
-                    Optional<Guest> guestOpt = guestDAO.findByPassportNumber(guestPassport, session);
+                    Optional<Guest> guestOpt = guestDAO.findByPassportNumber(guestPassport);
                     if (guestOpt.isEmpty()) {
                         errors.add("Строка " + lineNum + ": Гость с паспортом " + guestPassport + " не найден");
                         continue;
                     }
 
-                    Optional<Service> serviceOpt = serviceDAO.findByName(serviceName, session);
+                    Optional<Service> serviceOpt = serviceDAO.findByName(serviceName);
                     if (serviceOpt.isEmpty()) {
                         errors.add("Строка " + lineNum + ": Услуга '" + serviceName + "' не найдена");
                         continue;
@@ -90,7 +66,7 @@ public class GuestServiceCsvImporter {
                     Guest guest = guestOpt.get();
                     Service service = serviceOpt.get();
 
-                    List<GuestService> existingServices = guestServiceDAO.findByGuestId(guest.getId(), session);
+                    List<GuestService> existingServices = guestServiceDAO.findByGuestId(guest.getId());
                     boolean alreadyExists = false;
 
                     for (GuestService gs : existingServices) {
@@ -107,7 +83,7 @@ public class GuestServiceCsvImporter {
                         guestService.setService(service);
                         guestService.setServiceDate(serviceDate);
 
-                        guestServiceDAO.save(guestService, session);
+                        guestServiceDAO.save(guestService);
                         imported++;
                     }
 

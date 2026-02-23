@@ -1,198 +1,75 @@
 package com.agnezdei.hotelmvc.repository;
 
+import com.agnezdei.hotelmvc.model.Booking;
+import org.springframework.stereotype.Repository;
+import jakarta.persistence.TypedQuery;
 import java.util.List;
 import java.util.Optional;
 
-import  org.hibernate.Session;
-import org.springframework.stereotype.Repository;
-
-import com.agnezdei.hotelmvc.exceptions.DAOException;
-import com.agnezdei.hotelmvc.model.Booking;
-import com.agnezdei.hotelmvc.util.HibernateUtil;
-
-import jakarta.persistence.Query;
-
 @Repository
-public class BookingDAO extends AbstractHibernateDAO<Booking, Long> {
+public class BookingDAO extends AbstractDAO<Booking, Long> {
+
     public BookingDAO() {
-        super();
-    }
-    
-    @Override
-    public Optional<Booking> findById(Long id, Session session) throws DAOException {
-        try {
-            String hql = "SELECT DISTINCT b FROM Booking b " +
-                        "JOIN FETCH b.guest " +
-                        "JOIN FETCH b.room " +
-                        "WHERE b.id = :id";
-            Query query = session.createQuery(hql);
-            query.setParameter("id", id);
-            Booking booking = (Booking) query.getResultList();
-            return Optional.ofNullable(booking);
-        } catch (Exception e) {
-            throw new DAOException("Ошибка при поиске бронирования по ID: " + id, e);
-        }
-    }
-    
-    @Override
-    public List<Booking> findAll(Session session) throws DAOException {
-        try {
-            String hql = "SELECT DISTINCT b FROM Booking b " +
-                        "JOIN FETCH b.guest " +
-                        "JOIN FETCH b.room " +
-                        "ORDER BY b.checkInDate DESC";
-            Query query = session.createQuery(hql);
-            @SuppressWarnings("unchecked")
-            List<Booking> result = query.getResultList();
-            return result;
-        } catch (Exception e) {
-            throw new DAOException("Ошибка при получении всех бронирований", e);
-        }
-    }
-    
-    public List<Booking> findByRoomId(Long roomId, Session session) throws DAOException {
-        try {
-            String hql = "SELECT DISTINCT b FROM Booking b " +
-                        "JOIN FETCH b.guest " +
-                        "JOIN FETCH b.room " +
-                        "WHERE b.room.id = :roomId ORDER BY b.checkInDate DESC";
-            Query query = session.createQuery(hql);
-            query.setParameter("roomId", roomId);
-            @SuppressWarnings("unchecked")
-            List<Booking> result = query.getResultList();
-            return result;
-        } catch (Exception e) {
-            throw new DAOException("Ошибка при поиске бронирований комнаты: " + roomId, e);
-        }
-    }
-    
-    public List<Booking> findActiveBookings(Session session) throws DAOException {
-        try {
-            String hql = "SELECT DISTINCT b FROM Booking b " +
-                        "JOIN FETCH b.guest " +
-                        "JOIN FETCH b.room " +
-                        "WHERE b.isActive = true ORDER BY b.checkInDate";
-            Query query = session.createQuery(hql);
-            @SuppressWarnings("unchecked")
-            List<Booking> result = query.getResultList();
-            return result;
-        } catch (Exception e) {
-            throw new DAOException("Ошибка при поиске активных бронирований", e);
-        }
+        super(Booking.class);
     }
 
-    
-    public List<Booking> findByRoomId(Long roomId) throws DAOException {
-        Session session = null;
-        try {
-            session = HibernateUtil.openSession();
-            return findByRoomId(roomId, session);
-        } catch (Exception e) {
-            throw new DAOException("Ошибка при поиске бронирований комнаты: " + roomId, e);
-        } finally {
-            if (session != null && session.isOpen()) {
-                session.close();
-            }
-        }
-    }
-    
-    public List<Booking> findActiveBookings() throws DAOException {
-        Session session = null;
-        try {
-            session = HibernateUtil.openSession();
-            return findActiveBookings(session);
-        } catch (Exception e) {
-            throw new DAOException("Ошибка при поиске активных бронирований", e);
-        } finally {
-            if (session != null && session.isOpen()) {
-                session.close();
-            }
-        }
-    }
-    
-    public List<Booking> findActiveBookingsOrderedByGuestName() throws DAOException {
-        Session session = null;
-        try {
-            session = HibernateUtil.openSession();
-            String hql = "SELECT DISTINCT b FROM Booking b " +
-                        "JOIN FETCH b.guest " +
-                        "JOIN FETCH b.room " +
-                        "WHERE b.isActive = true ORDER BY b.guest.name";
-            Query query = session.createQuery(hql);
-            @SuppressWarnings("unchecked")
-            List<Booking> result = query.getResultList();
-            return result;
-        } catch (Exception e) {
-            throw new DAOException("Ошибка при поиске активных бронирований, отсортированных по имени гостя", e);
-        } finally {
-            if (session != null && session.isOpen()) {
-                session.close();
-            }
-        }
-    }
-    
-    public List<Booking> findActiveBookingsOrderedByCheckoutDate() throws DAOException {
-        Session session = null;
-        try {
-            session = HibernateUtil.openSession();
-            String hql = "SELECT DISTINCT b FROM Booking b " +
-                        "JOIN FETCH b.guest " +
-                        "JOIN FETCH b.room " +
-                        "WHERE b.isActive = true ORDER BY b.checkOutDate";
-            Query query = session.createQuery(hql);
-            @SuppressWarnings("unchecked")
-            List<Booking> result = query.getResultList();
-            return result;
-        } catch (Exception e) {
-            throw new DAOException("Ошибка при поиске активных бронирований, отсортированных по дате выезда", e);
-        } finally {
-            if (session != null && session.isOpen()) {
-                session.close();
-            }
-        }
-    }
-    
-    public List<Booking> findLastThreeGuestsByRoomId(Long roomId) throws DAOException {
-        Session session = null;
-        try {
-            session = HibernateUtil.openSession();
-            String hql = "SELECT DISTINCT b FROM Booking b " +
-                        "JOIN FETCH b.guest " +
-                        "WHERE b.room.id = :roomId AND b.isActive = false " +
-                        "ORDER BY b.checkOutDate DESC";
-            Query query = session.createQuery(hql);
-            query.setParameter("roomId", roomId);
-            query.setMaxResults(3);
-            @SuppressWarnings("unchecked")
-            List<Booking> result = query.getResultList();
-            return result;
-        } catch (Exception e) {
-            throw new DAOException("Ошибка при поиске истории комнаты: " + roomId, e);
-        } finally {
-            if (session != null && session.isOpen()) {
-                session.close();
-            }
-        }
+    @Override
+    public Optional<Booking> findById(Long id) {
+        String hql = "SELECT DISTINCT b FROM Booking b JOIN FETCH b.guest JOIN FETCH b.room WHERE b.id = :id";
+        return entityManager.createQuery(hql, Booking.class)
+                .setParameter("id", id)
+                .getResultStream()
+                .findFirst();
     }
 
-    public List<Booking> findAll() throws DAOException {
-        Session session = null;
-        try {
-            session = HibernateUtil.openSession();
-            String hql = "SELECT DISTINCT b FROM Booking b " +
-                        "JOIN FETCH b.guest " +
-                        "JOIN FETCH b.room " +
-                        "ORDER BY b.checkInDate DESC";
-            Query query = session.createQuery(hql);
-            @SuppressWarnings("unchecked")
-            List<Booking> result = query.getResultList();
-            return result;
-        } catch (Exception e) {
-            throw new DAOException("Ошибка при получении всех бронирований", e);
-        } finally {
-            if (session != null && session.isOpen()) {
-                session.close();
-            }
-        }
+    @Override
+    public List<Booking> findAll() {
+        String hql = "SELECT DISTINCT b FROM Booking b JOIN FETCH b.guest JOIN FETCH b.room ORDER BY b.checkInDate DESC";
+        return entityManager.createQuery(hql, Booking.class).getResultList();
+    }
+
+    public List<Booking> findByRoomId(Long roomId) {
+        String hql = "SELECT DISTINCT b FROM Booking b " +
+                     "JOIN FETCH b.guest " +
+                     "JOIN FETCH b.room " +
+                     "WHERE b.room.id = :roomId ORDER BY b.checkInDate DESC";
+        return entityManager.createQuery(hql, Booking.class)
+                .setParameter("roomId", roomId)
+                .getResultList();
+    }
+
+    public List<Booking> findActiveBookings() {
+        String hql = "SELECT DISTINCT b FROM Booking b " +
+                     "JOIN FETCH b.guest " +
+                     "JOIN FETCH b.room " +
+                     "WHERE b.isActive = true ORDER BY b.checkInDate";
+        return entityManager.createQuery(hql, Booking.class).getResultList();
+    }
+
+    public List<Booking> findActiveBookingsOrderedByGuestName() {
+        String hql = "SELECT DISTINCT b FROM Booking b " +
+                     "JOIN FETCH b.guest " +
+                     "JOIN FETCH b.room " +
+                     "WHERE b.isActive = true ORDER BY b.guest.name";
+        return entityManager.createQuery(hql, Booking.class).getResultList();
+    }
+
+    public List<Booking> findActiveBookingsOrderedByCheckoutDate() {
+        String hql = "SELECT DISTINCT b FROM Booking b " +
+                     "JOIN FETCH b.guest " +
+                     "JOIN FETCH b.room " +
+                     "WHERE b.isActive = true ORDER BY b.checkOutDate";
+        return entityManager.createQuery(hql, Booking.class).getResultList();
+    }
+
+    public List<Booking> findLastThreeGuestsByRoomId(Long roomId) {
+        String jpql = "SELECT DISTINCT b FROM Booking b " +
+                      "JOIN FETCH b.guest " +
+                      "WHERE b.room.id = :roomId AND b.isActive = false " +
+                      "ORDER BY b.checkOutDate DESC";
+        return entityManager.createQuery(jpql, Booking.class)
+                .setParameter("roomId", roomId)
+                .setMaxResults(3)
+                .getResultList();
     }
 }
