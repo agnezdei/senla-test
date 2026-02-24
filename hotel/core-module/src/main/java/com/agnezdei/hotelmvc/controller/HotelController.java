@@ -1,4 +1,4 @@
-package com.agnezdei.hotelmvc.web.controller;
+package com.agnezdei.hotelmvc.controller;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.agnezdei.hotelmvc.controller.HotelAdmin;
 import com.agnezdei.hotelmvc.dto.GuestDTO;
 import com.agnezdei.hotelmvc.dto.GuestServiceDTO;
 import com.agnezdei.hotelmvc.exceptions.BusinessLogicException;
@@ -34,7 +33,6 @@ public class HotelController {
     @Autowired
     private HotelAdmin hotelAdmin;
 
-    // ---------- Room endpoints ----------
     @PostMapping("/rooms")
     public ResponseEntity<String> addRoom(@RequestParam String number,
                                           @RequestParam RoomType type,

@@ -12,7 +12,6 @@
 
     <modules>
         <module>core-module</module>
-        <module>web-module</module>
     </modules>
 
     <properties>
