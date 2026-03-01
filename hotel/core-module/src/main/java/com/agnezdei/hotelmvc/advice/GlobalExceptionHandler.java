@@ -1,4 +1,4 @@
-package com.agnezdei.hotelmvc.web.advice;
+package com.agnezdei.hotelmvc.advice;
 
 import com.agnezdei.hotelmvc.exceptions.BusinessLogicException;
 import com.agnezdei.hotelmvc.exceptions.EntityNotFoundException;
