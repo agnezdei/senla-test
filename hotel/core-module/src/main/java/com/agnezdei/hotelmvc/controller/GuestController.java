@@ -13,6 +13,11 @@ import org.springframework.web.bind.annotation.*;
 public class GuestController {
     @Autowired private GuestService guestService;
 
+    @GetMapping
+    public ResponseEntity<String> test() {
+        return ResponseEntity.ok("GuestController is working");
+    }
+
     @PostMapping("/export")
     public ResponseEntity<String> exportGuests(@RequestParam String filePath) {
         return ResponseEntity.ok(guestService.exportToCsv(filePath));
