@@ -10,7 +10,9 @@ import com.agnezdei.hotelmvc.mapper.RoomMapper;
 import com.agnezdei.hotelmvc.model.Room;
 import com.agnezdei.hotelmvc.model.RoomStatus;
 import com.agnezdei.hotelmvc.model.RoomType;
+import com.agnezdei.hotelmvc.model.Booking;
 import com.agnezdei.hotelmvc.repository.RoomDAO;
+import com.agnezdei.hotelmvc.repository.BookingDAO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
+import java.time.LocalDate;
 
 @Service
 public class RoomService {
@@ -27,6 +30,8 @@ public class RoomService {
 
     @Autowired
     private RoomDAO roomDAO;
+    @Autowired
+    private BookingDAO bookingDAO;
     @Autowired
     private AppConfig config;
     @Autowired
@@ -150,6 +155,62 @@ public class RoomService {
         String result = "Успех: Добавлен номер " + number;
         logger.info(result);
         return result;
+    }
+
+    @Transactional(readOnly = true)
+    public List<Room> getAllRooms() {
+        return roomDAO.findAll();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Room> getAllRoomsSortedByPrice() {
+        return roomDAO.findAllOrderedByPrice();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Room> getAllRoomsSortedByCapacity() {
+        return roomDAO.findAllOrderedByCapacity();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Room> getAllRoomsSortedByStars() {
+        return roomDAO.findAllOrderedByStars();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Room> getAvailableRooms() {
+        return roomDAO.findAvailableRooms();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Room> getAvailableRoomsSortedByPrice() {
+        return roomDAO.findAvailableRoomsOrderedByPrice();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Room> getAvailableRoomsSortedByCapacity() {
+        return roomDAO.findAvailableRoomsOrderedByCapacity();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Room> getAvailableRoomsSortedByStars() {
+        return roomDAO.findAvailableRoomsOrderedByStars();
+    }
+
+    @Transactional(readOnly = true)
+    public int getTotalAvailableRooms() {
+        return roomDAO.countAvailableRooms();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Room> getRoomsAvailableByDate(LocalDate date) {
+        return roomDAO.findRoomsAvailableOnDate(date);
+    }
+
+    public List<Booking> getLastThreeGuestsOfRoom(String roomNumber) {
+        Room room = roomDAO.findByNumber(roomNumber)
+                .orElseThrow(() -> new EntityNotFoundException("Комната не найдена"));
+        return bookingDAO.findLastThreeGuestsByRoomId(room.getId());
     }
 
     @Transactional(readOnly = true)

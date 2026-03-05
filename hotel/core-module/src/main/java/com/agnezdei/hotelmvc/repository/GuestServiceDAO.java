@@ -63,11 +63,6 @@ public class GuestServiceDAO extends AbstractDAO<GuestService, Long> {
                 .getResultList();
     }
 
-    public List<GuestService> findByGuestIdOrderedByDate(Long guestId) {
-        // это то же самое, что findByGuestId, но для ясности оставим
-        return findByGuestId(guestId);
-    }
-
     public List<GuestService> findByGuestNameOrderedByPrice(String guestName) {
         String hql = "SELECT DISTINCT gs FROM GuestService gs " +
                      "JOIN FETCH gs.service " +

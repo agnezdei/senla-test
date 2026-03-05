@@ -6,19 +6,20 @@ import com.agnezdei.hotelmvc.dto.ServiceDTO;
 import com.agnezdei.hotelmvc.exceptions.BusinessLogicException;
 import com.agnezdei.hotelmvc.exceptions.EntityNotFoundException;
 import com.agnezdei.hotelmvc.mapper.ServiceMapper;
+import com.agnezdei.hotelmvc.model.Service;
 import com.agnezdei.hotelmvc.model.ServiceCategory;
 import com.agnezdei.hotelmvc.repository.ServiceDAO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
-@Service
+@Component
 public class ServiceService {
     private static final Logger logger = LoggerFactory.getLogger(ServiceService.class);
 
@@ -93,6 +94,17 @@ public class ServiceService {
         String result = "Успех: Цена услуги '" + serviceName + "' изменена на " + newPrice + " руб.";
         logger.info(result);
         return result;
+    }
+
+    @Transactional(readOnly = true)
+    public List<Service> getAllServices() {
+        return serviceDAO.findAll();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Service> getAllServicesSortedByCategoryAndPrice() {
+        logger.debug("Запрос всех услуг, отсортированных по категории и цене");
+        return serviceDAO.findAllOrderedByCategoryAndPrice();
     }
 
     @Transactional(readOnly = true)

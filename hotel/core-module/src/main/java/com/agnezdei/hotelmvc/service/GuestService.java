@@ -6,7 +6,9 @@ import com.agnezdei.hotelmvc.dto.GuestDTO;
 import com.agnezdei.hotelmvc.exceptions.BusinessLogicException;
 import com.agnezdei.hotelmvc.mapper.GuestMapper;
 import com.agnezdei.hotelmvc.model.Guest;
+import com.agnezdei.hotelmvc.model.Booking;
 import com.agnezdei.hotelmvc.repository.GuestDAO;
+import com.agnezdei.hotelmvc.repository.BookingDAO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class GuestService {
@@ -23,6 +26,8 @@ public class GuestService {
 
     @Autowired
     private GuestDAO guestDAO;
+    @Autowired
+    private BookingDAO bookingDAO;
     @Autowired
     private CsvExporter csvExporter;
     @Autowired
@@ -58,6 +63,33 @@ public class GuestService {
             return "Ошибка импорта: " + e.getMessage();
         }
     }
+
+    public List<Guest> getActiveGuests() {
+        return bookingDAO.findActiveBookings().stream()
+                .map(Booking::getGuest)
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+    public List<Guest> getActiveGuestsSortedByName() {
+        return bookingDAO.findActiveBookingsOrderedByGuestName().stream()
+                .map(Booking::getGuest)
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+    public List<Guest> getActiveGuestsSortedByCheckout() {
+        return bookingDAO.findActiveBookingsOrderedByCheckoutDate().stream()
+                .map(Booking::getGuest)
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+    public int getTotalActiveGuests() {
+        return guestDAO.countGuestsWithActiveBookings();
+    }
+
+
 
     @Transactional(readOnly = true)
     public Optional<Guest> findByPassportNumber(String passportNumber) {

@@ -1,42 +1,63 @@
 package com.agnezdei.hotelmvc.controller;
 
+import com.agnezdei.hotelmvc.dto.GuestServiceDTO;
 import com.agnezdei.hotelmvc.exceptions.BusinessLogicException;
 import com.agnezdei.hotelmvc.exceptions.EntityNotFoundException;
+import com.agnezdei.hotelmvc.mapper.GuestServiceMapper;
+import com.agnezdei.hotelmvc.model.GuestService;
 import com.agnezdei.hotelmvc.service.GuestServiceService;
-import com.agnezdei.hotelmvc.dto.GuestServiceDTO;
-import org.springframework.format.annotation.DateTimeFormat;
-import java.time.LocalDate;
-import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/guest-services")
 public class GuestServiceController {
-    @Autowired private GuestServiceService guestServiceService;
+
+    private final GuestServiceService guestServiceService;
+
+    @Autowired
+    public GuestServiceController(GuestServiceService guestServiceService) {
+        this.guestServiceService = guestServiceService;
+    }
 
     @PostMapping
     public ResponseEntity<String> addServiceToGuest(@RequestParam String guestPassport,
                                                     @RequestParam String serviceName,
-                                                    @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate serviceDate) throws EntityNotFoundException, BusinessLogicException {
+                                                    @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate serviceDate)
+            throws EntityNotFoundException, BusinessLogicException {
         return ResponseEntity.ok(guestServiceService.addServiceToGuest(guestPassport, serviceName, serviceDate));
     }
 
     @DeleteMapping("/{guestServiceId}")
-    public ResponseEntity<String> removeServiceFromGuest(@PathVariable("guestServiceId") Long guestServiceId) throws EntityNotFoundException, BusinessLogicException {
+    public ResponseEntity<String> removeServiceFromGuest(@PathVariable Long guestServiceId)
+            throws EntityNotFoundException, BusinessLogicException {
         return ResponseEntity.ok(guestServiceService.removeServiceFromGuest(guestServiceId));
     }
 
     @GetMapping("/guests/{guestId}")
-    public ResponseEntity<List<GuestServiceDTO>> getGuestServices(@PathVariable("guestId") Long guestId) throws BusinessLogicException {
+    public ResponseEntity<List<GuestServiceDTO>> getGuestServices(@PathVariable Long guestId)
+            throws BusinessLogicException {
         return ResponseEntity.ok(guestServiceService.getGuestServices(guestId));
     }
 
     @GetMapping("/guests/by-name/{guestName}")
-    public ResponseEntity<List<GuestServiceDTO>> getGuestServicesByName(@PathVariable String guestName) throws BusinessLogicException {
-        return ResponseEntity.ok(guestServiceService.getGuestServicesByName(guestName));
+    public ResponseEntity<List<GuestServiceDTO>> getGuestServicesByName(
+            @PathVariable String guestName,
+            @RequestParam(required = false) String sort) throws BusinessLogicException {
+        List<GuestService> services;
+        if ("price".equals(sort)) {
+            services = guestServiceService.getGuestServicesByNameSortedByPrice(guestName);
+        } else if ("date".equals(sort)) {
+            services = guestServiceService.getGuestServicesByNameSortedByDate(guestName);
+        } else {
+            services = guestServiceService.getGuestServicesByNameSortedByDate(guestName);
+        }
+        return ResponseEntity.ok(GuestServiceMapper.toDTOList(services));
     }
 
     @PostMapping("/export")

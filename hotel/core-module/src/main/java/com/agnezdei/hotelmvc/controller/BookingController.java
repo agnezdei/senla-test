@@ -13,6 +13,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/bookings")
 public class BookingController {
@@ -30,6 +32,12 @@ public class BookingController {
     @PostMapping("/{roomNumber}/evict")
     public ResponseEntity<String> evictGuest(@PathVariable String roomNumber) throws EntityNotFoundException, BusinessLogicException {
         return ResponseEntity.ok(bookingService.evictGuest(roomNumber));
+    }
+
+    @GetMapping("/{roomNumber}/payment")
+    public ResponseEntity<Map<String, Object>> getPaymentForRoom(@PathVariable String roomNumber) {
+        Map<String, Object> paymentDetails = bookingService.getPaymentDetails(roomNumber);
+        return ResponseEntity.ok(paymentDetails);
     }
 
     @PostMapping("/export")

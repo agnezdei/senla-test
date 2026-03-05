@@ -8,6 +8,7 @@ import com.agnezdei.hotelmvc.exceptions.EntityNotFoundException;
 import com.agnezdei.hotelmvc.mapper.GuestServiceMapper;
 import com.agnezdei.hotelmvc.model.Guest;
 import com.agnezdei.hotelmvc.model.GuestService;
+import com.agnezdei.hotelmvc.repository.GuestDAO;
 import com.agnezdei.hotelmvc.repository.GuestServiceDAO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,17 +25,24 @@ import java.util.Optional;
 public class GuestServiceService {
     private static final Logger logger = LoggerFactory.getLogger(GuestServiceService.class);
 
-    @Autowired
-    private GuestServiceDAO guestServiceDAO;
-    @Autowired
-    private CsvExporter csvExporter;
-    @Autowired
-    private GuestServiceCsvImporter guestServiceImporter;
+    private final GuestServiceDAO guestServiceDAO;
+    private final GuestDAO guestDAO;
+    private final CsvExporter csvExporter;
+    private final GuestServiceCsvImporter guestServiceImporter;
+    private final ServiceService serviceService;
 
     @Autowired
-    private com.agnezdei.hotelmvc.service.GuestService guestService;
-    @Autowired
-    private ServiceService serviceService;
+    public GuestServiceService(GuestServiceDAO guestServiceDAO,
+                               GuestDAO guestDAO,
+                               CsvExporter csvExporter,
+                               GuestServiceCsvImporter guestServiceImporter,
+                               ServiceService serviceService) {
+        this.guestServiceDAO = guestServiceDAO;
+        this.guestDAO = guestDAO;
+        this.csvExporter = csvExporter;
+        this.guestServiceImporter = guestServiceImporter;
+        this.serviceService = serviceService;
+    }
 
     @Transactional(readOnly = true)
     public String exportToCsv(String filePath) {
@@ -73,7 +81,7 @@ public class GuestServiceService {
         logger.info("Начало добавления услуги гостю: паспорт={}, услуга={}, дата={}",
                 guestPassport, serviceName, serviceDate);
 
-        Optional<Guest> guestOpt = guestService.findByPassportNumber(guestPassport);
+        Optional<Guest> guestOpt = guestDAO.findByPassportNumber(guestPassport);
         if (guestOpt.isEmpty()) {
             throw new EntityNotFoundException("Гость с паспортом " + guestPassport + " не найден");
         }
@@ -86,8 +94,8 @@ public class GuestServiceService {
         Guest guest = guestOpt.get();
         com.agnezdei.hotelmvc.model.Service service = serviceOpt.get();
 
-        GuestService guestService = new GuestService(guest, service, serviceDate);
-        guestServiceDAO.save(guestService);
+        GuestService guestServiceEntity = new GuestService(guest, service, serviceDate);
+        guestServiceDAO.save(guestServiceEntity);
 
         String result = "Успех: Услуга '" + serviceName + "' добавлена гостю " + guest.getName();
         logger.info(result);
@@ -135,5 +143,15 @@ public class GuestServiceService {
             logger.error("Ошибка БД при получении услуг гостя по имени: {}", e.getMessage(), e);
             throw new BusinessLogicException("Ошибка базы данных: " + e.getMessage());
         }
+    }
+
+    @Transactional(readOnly = true)
+    public List<GuestService> getGuestServicesByNameSortedByPrice(String guestName) {
+        return guestServiceDAO.findByGuestNameOrderedByPrice(guestName);
+    }
+
+    @Transactional(readOnly = true)
+    public List<GuestService> getGuestServicesByNameSortedByDate(String guestName) {
+        return guestServiceDAO.findByGuestNameOrderedByDate(guestName);
     }
 }

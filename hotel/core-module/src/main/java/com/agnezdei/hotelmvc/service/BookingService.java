@@ -11,6 +11,7 @@ import com.agnezdei.hotelmvc.model.Guest;
 import com.agnezdei.hotelmvc.model.Room;
 import com.agnezdei.hotelmvc.model.RoomStatus;
 import com.agnezdei.hotelmvc.repository.BookingDAO;
+import com.agnezdei.hotelmvc.repository.GuestServiceDAO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,8 +20,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Map;
+import java.util.HashMap;
 
 @Service
 public class BookingService {
@@ -28,6 +32,8 @@ public class BookingService {
 
     @Autowired
     private BookingDAO bookingDAO;
+    @Autowired
+    private GuestServiceDAO guestServiceDAO;
     @Autowired
     private CsvExporter csvExporter;
     @Autowired
@@ -95,7 +101,6 @@ public class BookingService {
             }
         }
 
-        // Поиск или создание гостя через GuestService
         Optional<Guest> existingGuest = guestService.findByPassportNumber(guest.getPassportNumber());
         Guest savedGuest;
         if (existingGuest.isPresent()) {
@@ -157,6 +162,53 @@ public class BookingService {
         String result = "Успех: " + activeBooking.getGuest().getName() +
                 " выселен из номера " + roomNumber;
         logger.info(result);
+        return result;
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> getPaymentDetails(String roomNumber) throws EntityNotFoundException, BusinessLogicException {
+        Room room = roomService.findByNumber(roomNumber)
+                .orElseThrow(() -> new EntityNotFoundException("Комната " + roomNumber + " не найдена"));
+        List<Booking> bookings = bookingDAO.findByRoomId(room.getId());
+        Booking activeBooking = bookings.stream()
+                .filter(Booking::isActive)
+                .findFirst()
+                .orElseThrow(() -> new BusinessLogicException("В комнате " + roomNumber + " нет активного бронирования"));
+
+        long days = activeBooking.getCheckOutDate().toEpochDay() - activeBooking.getCheckInDate().toEpochDay();
+        if (days <= 0) days = 1;
+
+        double roomCost = room.getPrice() * days;
+
+        List<com.agnezdei.hotelmvc.model.GuestService> allGuestServices =
+                guestServiceDAO.findByGuestId(activeBooking.getGuest().getId());
+        List<Map<String, Object>> serviceItems = new ArrayList<>();
+        double servicesCost = 0.0;
+        for (com.agnezdei.hotelmvc.model.GuestService gs : allGuestServices) {
+            if (!gs.getServiceDate().isBefore(activeBooking.getCheckInDate()) &&
+                    !gs.getServiceDate().isAfter(activeBooking.getCheckOutDate())) {
+                Map<String, Object> item = new HashMap<>();
+                item.put("name", gs.getService().getName());
+                item.put("date", gs.getServiceDate().toString());
+                item.put("price", gs.getService().getPrice());
+                serviceItems.add(item);
+                servicesCost += gs.getService().getPrice();
+            }
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("roomNumber", roomNumber);
+        result.put("guestName", activeBooking.getGuest().getName());
+        result.put("guestPassport", activeBooking.getGuest().getPassportNumber());
+        result.put("checkInDate", activeBooking.getCheckInDate().toString());
+        result.put("checkOutDate", activeBooking.getCheckOutDate().toString());
+        result.put("days", days);
+        result.put("roomPricePerDay", room.getPrice());
+        result.put("roomCost", roomCost);
+        result.put("services", serviceItems);
+        result.put("totalServicesCost", servicesCost);
+        result.put("totalCost", roomCost + servicesCost);
+
         return result;
     }
 

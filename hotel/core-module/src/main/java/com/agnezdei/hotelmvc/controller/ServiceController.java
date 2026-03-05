@@ -3,11 +3,16 @@ package com.agnezdei.hotelmvc.controller;
 import com.agnezdei.hotelmvc.exceptions.BusinessLogicException;
 import com.agnezdei.hotelmvc.exceptions.EntityNotFoundException;
 import com.agnezdei.hotelmvc.model.ServiceCategory;
+import com.agnezdei.hotelmvc.model.Service;
 import com.agnezdei.hotelmvc.service.ServiceService;
+import com.agnezdei.hotelmvc.mapper.ServiceMapper;
+import com.agnezdei.hotelmvc.dto.ServiceDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/services")
@@ -26,6 +31,18 @@ public class ServiceController {
     public ResponseEntity<String> changeServicePrice(@PathVariable String serviceName,
                                                      @RequestParam double newPrice) throws EntityNotFoundException, BusinessLogicException {
         return ResponseEntity.ok(serviceService.changePrice(serviceName, newPrice));
+    }
+
+    @GetMapping
+    public ResponseEntity<List<ServiceDTO>> getAllServices(
+            @RequestParam(required = false) String sort) {
+        List<Service> services;
+        if ("category,price".equals(sort)) {
+            services = serviceService.getAllServicesSortedByCategoryAndPrice();
+        } else {
+            services = serviceService.getAllServices();
+        }
+        return ResponseEntity.ok(ServiceMapper.toDTOList(services));
     }
 
     @PostMapping("/export")
