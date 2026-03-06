@@ -20,22 +20,27 @@ public class ServiceController {
     @Autowired private ServiceService serviceService;
 
     @PostMapping
-    public ResponseEntity<String> addService(@RequestParam String name,
-                                             @RequestParam double price,
-                                             @RequestParam ServiceCategory category) throws BusinessLogicException {
+    public ResponseEntity<String> addService(
+            @RequestParam(name = "name") String name,
+            @RequestParam(name = "price") double price,
+            @RequestParam(name = "category") ServiceCategory category
+    ) throws BusinessLogicException {
         String result = serviceService.addService(name, price, category);
         return new ResponseEntity<>(result, HttpStatus.CREATED);
     }
 
     @PutMapping("/{serviceName}/price")
-    public ResponseEntity<String> changeServicePrice(@PathVariable String serviceName,
-                                                     @RequestParam double newPrice) throws EntityNotFoundException, BusinessLogicException {
+    public ResponseEntity<String> changeServicePrice(
+            @PathVariable(name = "serviceName") String serviceName,
+            @RequestParam(name = "newPrice") double newPrice
+    ) throws EntityNotFoundException, BusinessLogicException {
         return ResponseEntity.ok(serviceService.changePrice(serviceName, newPrice));
     }
 
     @GetMapping
     public ResponseEntity<List<ServiceDTO>> getAllServices(
-            @RequestParam(required = false) String sort) {
+            @RequestParam(name = "sort", required = false) String sort
+    ) {
         List<Service> services;
         if ("category,price".equals(sort)) {
             services = serviceService.getAllServicesSortedByCategoryAndPrice();
@@ -46,12 +51,16 @@ public class ServiceController {
     }
 
     @PostMapping("/export")
-    public ResponseEntity<String> exportServices(@RequestParam String filePath) {
+    public ResponseEntity<String> exportServices(
+            @RequestParam(name = "filePath") String filePath
+    ) {
         return ResponseEntity.ok(serviceService.exportToCsv(filePath));
     }
 
     @PostMapping("/import")
-    public ResponseEntity<String> importServices(@RequestParam String filePath) {
+    public ResponseEntity<String> importServices(
+            @RequestParam(name = "filePath") String filePath
+    ) {
         return ResponseEntity.ok(serviceService.importFromCsv(filePath));
     }
 }

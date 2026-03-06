@@ -5,7 +5,6 @@ import com.agnezdei.hotelmvc.mapper.GuestMapper;
 import com.agnezdei.hotelmvc.model.Guest;
 import com.agnezdei.hotelmvc.dto.GuestDTO;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,7 +22,8 @@ public class GuestController {
 
     @GetMapping("/active")
     public ResponseEntity<List<GuestDTO>> getActiveGuests(
-            @RequestParam(required = false) String sort) {
+            @RequestParam(name = "sort", required = false) String sort
+    ) {
         List<Guest> guests;
         if (sort != null) {
             guests = switch (sort) {
@@ -37,19 +37,22 @@ public class GuestController {
         return ResponseEntity.ok(GuestMapper.toDTOList(guests));
     }
 
-    // Количество активных гостей
     @GetMapping("/active/count")
     public ResponseEntity<Integer> getTotalActiveGuests() {
         return ResponseEntity.ok(guestService.getTotalActiveGuests());
     }
 
     @PostMapping("/export")
-    public ResponseEntity<String> exportGuests(@RequestParam String filePath) {
+    public ResponseEntity<String> exportGuests(
+            @RequestParam(name = "filePath") String filePath
+    ) {
         return ResponseEntity.ok(guestService.exportToCsv(filePath));
     }
 
     @PostMapping("/import")
-    public ResponseEntity<String> importGuests(@RequestParam String filePath) {
+    public ResponseEntity<String> importGuests(
+            @RequestParam(name = "filePath") String filePath
+    ) {
         return ResponseEntity.ok(guestService.importFromCsv(filePath));
     }
 }

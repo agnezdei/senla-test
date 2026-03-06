@@ -26,29 +26,33 @@ public class GuestServiceController {
     }
 
     @PostMapping
-    public ResponseEntity<String> addServiceToGuest(@RequestParam String guestPassport,
-                                                    @RequestParam String serviceName,
-                                                    @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate serviceDate)
-            throws EntityNotFoundException, BusinessLogicException {
+    public ResponseEntity<String> addServiceToGuest(
+            @RequestParam(name = "guestPassport") String guestPassport,
+            @RequestParam(name = "serviceName") String serviceName,
+            @RequestParam(name = "serviceDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate serviceDate
+    ) throws EntityNotFoundException, BusinessLogicException {
         return ResponseEntity.ok(guestServiceService.addServiceToGuest(guestPassport, serviceName, serviceDate));
     }
 
     @DeleteMapping("/{guestServiceId}")
-    public ResponseEntity<String> removeServiceFromGuest(@PathVariable Long guestServiceId)
-            throws EntityNotFoundException, BusinessLogicException {
+    public ResponseEntity<String> removeServiceFromGuest(
+            @PathVariable(name = "guestServiceId") Long guestServiceId
+    ) throws EntityNotFoundException, BusinessLogicException {
         return ResponseEntity.ok(guestServiceService.removeServiceFromGuest(guestServiceId));
     }
 
     @GetMapping("/guests/{guestId}")
-    public ResponseEntity<List<GuestServiceDTO>> getGuestServices(@PathVariable Long guestId)
-            throws BusinessLogicException {
+    public ResponseEntity<List<GuestServiceDTO>> getGuestServices(
+            @PathVariable(name = "guestId") Long guestId
+    ) throws BusinessLogicException {
         return ResponseEntity.ok(guestServiceService.getGuestServices(guestId));
     }
 
     @GetMapping("/guests/by-name/{guestName}")
     public ResponseEntity<List<GuestServiceDTO>> getGuestServicesByName(
-            @PathVariable String guestName,
-            @RequestParam(required = false) String sort) throws BusinessLogicException {
+            @PathVariable(name = "guestName") String guestName,
+            @RequestParam(name = "sort", required = false) String sort
+    ) throws BusinessLogicException {
         List<GuestService> services;
         if ("price".equals(sort)) {
             services = guestServiceService.getGuestServicesByNameSortedByPrice(guestName);
@@ -61,12 +65,16 @@ public class GuestServiceController {
     }
 
     @PostMapping("/export")
-    public ResponseEntity<String> exportGuestServices(@RequestParam String filePath) {
+    public ResponseEntity<String> exportGuestServices(
+            @RequestParam(name = "filePath") String filePath
+    ) {
         return ResponseEntity.ok(guestServiceService.exportToCsv(filePath));
     }
 
     @PostMapping("/import")
-    public ResponseEntity<String> importGuestServices(@RequestParam String filePath) {
+    public ResponseEntity<String> importGuestServices(
+            @RequestParam(name = "filePath") String filePath
+    ) {
         return ResponseEntity.ok(guestServiceService.importFromCsv(filePath));
     }
 }
