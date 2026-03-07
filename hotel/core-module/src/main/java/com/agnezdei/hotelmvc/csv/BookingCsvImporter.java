@@ -1,5 +1,16 @@
 package com.agnezdei.hotelmvc.csv;
 
+import com.agnezdei.hotelmvc.model.Booking;
+import com.agnezdei.hotelmvc.model.Guest;
+import com.agnezdei.hotelmvc.model.Room;
+import com.agnezdei.hotelmvc.model.RoomStatus;
+import com.agnezdei.hotelmvc.repository.BookingDAO;
+import com.agnezdei.hotelmvc.repository.GuestDAO;
+import com.agnezdei.hotelmvc.repository.RoomDAO;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -8,22 +19,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import org.hibernate.Session;
-import org.hibernate.Transaction;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
-import com.agnezdei.hotelmvc.model.Booking;
-import com.agnezdei.hotelmvc.model.Guest;
-import com.agnezdei.hotelmvc.model.Room;
-import com.agnezdei.hotelmvc.model.RoomStatus;
-import com.agnezdei.hotelmvc.repository.BookingDAO;
-import com.agnezdei.hotelmvc.repository.GuestDAO;
-import com.agnezdei.hotelmvc.repository.RoomDAO;
-import com.agnezdei.hotelmvc.util.HibernateUtil;
-
 @Component
 public class BookingCsvImporter {
+
     @Autowired
     private BookingDAO bookingDAO;
     @Autowired
@@ -31,37 +29,14 @@ public class BookingCsvImporter {
     @Autowired
     private RoomDAO roomDAO;
 
-    public BookingCsvImporter() {
-    }
-
+    @Transactional
     public String importBookings(String filePath) {
-        Session session = null;
-        Transaction transaction = null;
-        try {
-            session = HibernateUtil.openSession();
-            transaction = session.beginTransaction();
-            
-            String result = importBookings(filePath, session);
-            
-            transaction.commit();
-            return result;
-        } catch (Exception e) {
-            if (transaction != null) transaction.rollback();
-            return "Ошибка при импорте бронирований: " + e.getMessage();
-        } finally {
-            if (session != null && session.isOpen()) {
-                session.close();
-            }
-        }
-    }
-
-    public String importBookings(String filePath, Session session) {
         List<String> errors = new ArrayList<>();
         int imported = 0;
         int updated = 0;
 
         try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
-            String line = reader.readLine();
+            String line = reader.readLine(); // пропускаем заголовок
 
             int lineNum = 1;
             while ((line = reader.readLine()) != null) {
@@ -79,13 +54,13 @@ public class BookingCsvImporter {
                     LocalDate checkOutDate = LocalDate.parse(data[3].trim());
                     boolean isActive = Boolean.parseBoolean(data[4].trim());
 
-                    Optional<Guest> guestOpt = guestDAO.findByPassportNumber(guestPassport, session);
+                    Optional<Guest> guestOpt = guestDAO.findByPassportNumber(guestPassport);
                     if (guestOpt.isEmpty()) {
                         errors.add("Строка " + lineNum + ": Гость с паспортом " + guestPassport + " не найден");
                         continue;
                     }
 
-                    Optional<Room> roomOpt = roomDAO.findByNumber(roomNumber, session);
+                    Optional<Room> roomOpt = roomDAO.findByNumber(roomNumber);
                     if (roomOpt.isEmpty()) {
                         errors.add("Строка " + lineNum + ": Комната с номером " + roomNumber + " не найдена");
                         continue;
@@ -94,7 +69,7 @@ public class BookingCsvImporter {
                     Guest guest = guestOpt.get();
                     Room room = roomOpt.get();
 
-                    List<Booking> existingBookings = bookingDAO.findByRoomId(room.getId(), session);
+                    List<Booking> existingBookings = bookingDAO.findByRoomId(room.getId());
                     Booking existingBooking = null;
 
                     for (Booking booking : existingBookings) {
@@ -108,7 +83,7 @@ public class BookingCsvImporter {
 
                     if (existingBooking != null) {
                         existingBooking.setActive(isActive);
-                        bookingDAO.update(existingBooking, session);
+                        bookingDAO.update(existingBooking);
                         updated++;
                     } else {
                         Booking booking = new Booking();
@@ -118,11 +93,11 @@ public class BookingCsvImporter {
                         booking.setCheckOutDate(checkOutDate);
                         booking.setActive(isActive);
 
-                        bookingDAO.save(booking, session);
+                        bookingDAO.save(booking);
 
                         if (isActive) {
                             room.setStatus(RoomStatus.OCCUPIED);
-                            roomDAO.update(room, session);
+                            roomDAO.update(room);
                         }
 
                         imported++;

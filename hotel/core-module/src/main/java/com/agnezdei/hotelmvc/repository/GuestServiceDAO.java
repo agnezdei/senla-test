@@ -1,222 +1,87 @@
 package com.agnezdei.hotelmvc.repository;
 
+import com.agnezdei.hotelmvc.model.GuestService;
+import org.springframework.stereotype.Repository;
+import jakarta.persistence.TypedQuery;
 import java.util.List;
 import java.util.Optional;
 
-import  org.hibernate.Session;
-import org.springframework.stereotype.Repository;
-
-import com.agnezdei.hotelmvc.exceptions.DAOException;
-import com.agnezdei.hotelmvc.model.GuestService;
-import com.agnezdei.hotelmvc.util.HibernateUtil;
-
-import jakarta.persistence.Query;
-
 @Repository
-public class GuestServiceDAO extends AbstractHibernateDAO<GuestService, Long> {
+public class GuestServiceDAO extends AbstractDAO<GuestService, Long> {
 
     public GuestServiceDAO() {
-        super();
+        super(GuestService.class);
     }
-    
-    public Optional<GuestService> findById(Long id, Session session) throws DAOException {
-        try {
-            String hql = "SELECT DISTINCT gs FROM GuestService gs " +
-                        "JOIN FETCH gs.service " +
-                        "JOIN FETCH gs.guest " +
-                        "WHERE gs.id = :id";
-            Query query = session.createQuery(hql);
-            query.setParameter("id", id);
-            GuestService guestService = (GuestService) query.getResultList();
-            return Optional.ofNullable(guestService);
-        } catch (Exception e) {
-            throw new DAOException("Ошибка при поиске заказа услуги по ID: " + id, e);
-        }
+
+    @Override
+    public Optional<GuestService> findById(Long id) {
+        String hql = "SELECT DISTINCT gs FROM GuestService gs " +
+                     "JOIN FETCH gs.service " +
+                     "JOIN FETCH gs.guest " +
+                     "WHERE gs.id = :id";
+        TypedQuery<GuestService> query = entityManager.createQuery(hql, GuestService.class);
+        query.setParameter("id", id);
+        return query.getResultStream().findFirst();
     }
-    
-    public List<GuestService> findByGuestId(Long guestId, Session session) throws DAOException {
-        try {
-            String hql = "SELECT DISTINCT gs FROM GuestService gs " +
-                        "JOIN FETCH gs.service " +
-                        "JOIN FETCH gs.guest " +
-                        "WHERE gs.guest.id = :guestId ORDER BY gs.serviceDate";
-            Query query = session.createQuery(hql);
-            query.setParameter("guestId", guestId);
-            @SuppressWarnings("unchecked")
-            List<GuestService> result = query.getResultList();
-            return result;
-        } catch (Exception e) {
-            throw new DAOException("Ошибка при поиске заказов услуг гостя: " + guestId, e);
-        }
+
+    @Override
+    public List<GuestService> findAll() {
+        String hql = "SELECT DISTINCT gs FROM GuestService gs " +
+                     "JOIN FETCH gs.service " +
+                     "JOIN FETCH gs.guest " +
+                     "ORDER BY gs.serviceDate DESC";
+        return entityManager.createQuery(hql, GuestService.class).getResultList();
     }
-    
-    public List<GuestService> findAll(Session session) throws DAOException {
-        try {
-            String hql = "SELECT DISTINCT gs FROM GuestService gs " +
-                        "JOIN FETCH gs.service " +
-                        "JOIN FETCH gs.guest " +
-                        "ORDER BY gs.serviceDate DESC";
-            Query query = session.createQuery(hql);
-            @SuppressWarnings("unchecked")
-            List<GuestService> result = query.getResultList();
-            return result;
-        } catch (Exception e) {
-            throw new DAOException("Ошибка при получении всех заказов услуг", e);
-        }
+
+    public List<GuestService> findByGuestId(Long guestId) {
+        String hql = "SELECT DISTINCT gs FROM GuestService gs " +
+                     "JOIN FETCH gs.service " +
+                     "JOIN FETCH gs.guest " +
+                     "WHERE gs.guest.id = :guestId ORDER BY gs.serviceDate";
+        return entityManager.createQuery(hql, GuestService.class)
+                .setParameter("guestId", guestId)
+                .getResultList();
     }
-    
-    
-    public Optional<GuestService> findById(Long id) throws DAOException {
-        Session session = null;
-        try {
-            session = HibernateUtil.openSession();
-            return findById(id, session);
-        } catch (Exception e) {
-            throw new DAOException("Ошибка при поиске заказа услуги по ID: " + id, e);
-        } finally {
-            if (session != null && session.isOpen()) {
-                session.close();
-            }
-        }
+
+    public List<GuestService> findByServiceId(Long serviceId) {
+        String hql = "SELECT DISTINCT gs FROM GuestService gs " +
+                     "JOIN FETCH gs.service " +
+                     "JOIN FETCH gs.guest " +
+                     "WHERE gs.service.id = :serviceId ORDER BY gs.serviceDate";
+        return entityManager.createQuery(hql, GuestService.class)
+                .setParameter("serviceId", serviceId)
+                .getResultList();
     }
-    
-    public List<GuestService> findByGuestId(Long guestId) throws DAOException {
-        Session session = null;
-        try {
-            session = HibernateUtil.openSession();
-            return findByGuestId(guestId, session);
-        } catch (Exception e) {
-            throw new DAOException("Ошибка при поиске заказов услуг гостя: " + guestId, e);
-        } finally {
-            if (session != null && session.isOpen()) {
-                session.close();
-            }
-        }
+
+    public List<GuestService> findByGuestIdOrderedByPrice(Long guestId) {
+        String hql = "SELECT DISTINCT gs FROM GuestService gs " +
+                     "JOIN FETCH gs.service " +
+                     "JOIN FETCH gs.guest " +
+                     "WHERE gs.guest.id = :guestId ORDER BY gs.service.price";
+        return entityManager.createQuery(hql, GuestService.class)
+                .setParameter("guestId", guestId)
+                .getResultList();
     }
-    
-    public List<GuestService> findByServiceId(Long serviceId) throws DAOException {
-        Session session = null;
-        try {
-            session = HibernateUtil.openSession();
-            String hql = "SELECT DISTINCT gs FROM GuestService gs " +
-                        "JOIN FETCH gs.service " +
-                        "JOIN FETCH gs.guest " +
-                        "WHERE gs.service.id = :serviceId ORDER BY gs.serviceDate";
-            Query query = session.createQuery(hql);
-            query.setParameter("serviceId", serviceId);
-            @SuppressWarnings("unchecked")
-            List<GuestService> result = query.getResultList();
-            return result;
-        } catch (Exception e) {
-            throw new DAOException("Ошибка при поиске заказов для услуги: " + serviceId, e);
-        } finally {
-            if (session != null && session.isOpen()) {
-                session.close();
-            }
-        }
+
+    public List<GuestService> findByGuestNameOrderedByPrice(String guestName) {
+        String hql = "SELECT DISTINCT gs FROM GuestService gs " +
+                     "JOIN FETCH gs.service " +
+                     "JOIN FETCH gs.guest " +
+                     "WHERE LOWER(gs.guest.name) LIKE LOWER(:guestName) " +
+                     "ORDER BY gs.service.price";
+        return entityManager.createQuery(hql, GuestService.class)
+                .setParameter("guestName", "%" + guestName + "%")
+                .getResultList();
     }
-    
-    public List<GuestService> findByGuestIdOrderedByPrice(Long guestId) throws DAOException {
-        Session session = null;
-        try {
-            session = HibernateUtil.openSession();
-            String hql = "SELECT DISTINCT gs FROM GuestService gs " +
-                        "JOIN FETCH gs.service " +
-                        "JOIN FETCH gs.guest " +
-                        "WHERE gs.guest.id = :guestId ORDER BY gs.service.price";
-            Query query = session.createQuery(hql);
-            query.setParameter("guestId", guestId);
-            @SuppressWarnings("unchecked")
-            List<GuestService> result = query.getResultList();
-            return result;
-        } catch (Exception e) {
-            throw new DAOException("Ошибка при поиске услуг гостя, отсортированных по цене: " + guestId, e);
-        } finally {
-            if (session != null && session.isOpen()) {
-                session.close();
-            }
-        }
-    }
-    
-    public List<GuestService> findByGuestIdOrderedByDate(Long guestId) throws DAOException {
-        Session session = null;
-        try {
-            session = HibernateUtil.openSession();
-            String hql = "SELECT DISTINCT gs FROM GuestService gs " +
-                        "JOIN FETCH gs.service " +
-                        "JOIN FETCH gs.guest " +
-                        "WHERE gs.guest.id = :guestId ORDER BY gs.serviceDate";
-            Query query = session.createQuery(hql);
-            query.setParameter("guestId", guestId);
-            @SuppressWarnings("unchecked")
-            List<GuestService> result = query.getResultList();
-            return result;
-        } catch (Exception e) {
-            throw new DAOException("Ошибка при поиске услуг гостя, отсортированных по дате: " + guestId, e);
-        } finally {
-            if (session != null && session.isOpen()) {
-                session.close();
-            }
-        }
-    }
-    
-    public List<GuestService> findByGuestNameOrderedByPrice(String guestName) throws DAOException {
-        Session session = null;
-        try {
-            session = HibernateUtil.openSession();
-            String hql = "SELECT DISTINCT gs FROM GuestService gs " +
-                        "JOIN FETCH gs.service " +
-                        "JOIN FETCH gs.guest " +
-                        "WHERE LOWER(gs.guest.name) LIKE LOWER(:guestName) " +
-                        "ORDER BY gs.service.price";
-            Query query = session.createQuery(hql);
-            query.setParameter("guestName", "%" + guestName + "%");
-            @SuppressWarnings("unchecked")
-            List<GuestService> result = query.getResultList();
-            return result;
-        } catch (Exception e) {
-            throw new DAOException("Ошибка при поиске услуг гостя по имени, отсортированных по цене: " + guestName, e);
-        } finally {
-            if (session != null && session.isOpen()) {
-                session.close();
-            }
-        }
-    }
-    
-    public List<GuestService> findByGuestNameOrderedByDate(String guestName) throws DAOException {
-        Session session = null;
-        try {
-            session = HibernateUtil.openSession();
-            String hql = "SELECT DISTINCT gs FROM GuestService gs " +
-                        "JOIN FETCH gs.service " +
-                        "JOIN FETCH gs.guest " +
-                        "WHERE LOWER(gs.guest.name) LIKE LOWER(:guestName) " +
-                        "ORDER BY gs.serviceDate";
-            Query query = session.createQuery(hql);
-            query.setParameter("guestName", "%" + guestName + "%");
-            @SuppressWarnings("unchecked")
-            List<GuestService> result = query.getResultList();
-            return result;
-        } catch (Exception e) {
-            throw new DAOException("Ошибка при поиске услуг гостя по имени, отсортированных по дате: " + guestName, e);
-        } finally {
-            if (session != null && session.isOpen()) {
-                session.close();
-            }
-        }
-    }
-    
-    public List<GuestService> findAll() throws DAOException {
-        Session session = null;
-        try {
-            session = HibernateUtil.openSession();
-            return findAll(session);
-        } catch (Exception e) {
-            throw new DAOException("Ошибка при получении всех заказов услуг", e);
-        } finally {
-            if (session != null && session.isOpen()) {
-                session.close();
-            }
-        }
+
+    public List<GuestService> findByGuestNameOrderedByDate(String guestName) {
+        String hql = "SELECT DISTINCT gs FROM GuestService gs " +
+                     "JOIN FETCH gs.service " +
+                     "JOIN FETCH gs.guest " +
+                     "WHERE LOWER(gs.guest.name) LIKE LOWER(:guestName) " +
+                     "ORDER BY gs.serviceDate";
+        return entityManager.createQuery(hql, GuestService.class)
+                .setParameter("guestName", "%" + guestName + "%")
+                .getResultList();
     }
 }

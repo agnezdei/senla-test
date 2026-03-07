@@ -1,5 +1,12 @@
 package com.agnezdei.hotelmvc.csv;
 
+import com.agnezdei.hotelmvc.model.Service;
+import com.agnezdei.hotelmvc.model.ServiceCategory;
+import com.agnezdei.hotelmvc.repository.ServiceDAO;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -7,18 +14,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import org.hibernate.Session;
-import org.hibernate.Transaction;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
-import com.agnezdei.hotelmvc.model.Service;
-import com.agnezdei.hotelmvc.model.ServiceCategory;
-import com.agnezdei.hotelmvc.repository.ServiceDAO;
-import com.agnezdei.hotelmvc.util.HibernateUtil;
-
 @Component
 public class ServiceCsvImporter {
+
     @Autowired
     private ServiceDAO serviceDAO;
 
@@ -45,57 +43,37 @@ public class ServiceCsvImporter {
         }
     }
 
-    public ServiceCsvImporter() {
-    }
-
-        public String importServices(String filePath) {
-        Session session = null;
-        Transaction transaction = null;
-        try {
-            session = HibernateUtil.openSession();
-            transaction = session.beginTransaction();
-            
-            String result = importServices(filePath, session);
-            
-            transaction.commit();
-            return result;
-        } catch (Exception e) {
-            if (transaction != null) transaction.rollback();
-            return "Ошибка при импорте услуг: " + e.getMessage();
-        } finally {
-            if (session != null && session.isOpen()) {
-                session.close();
-            }
-        }
-    }
-
-    public String importServices(String filePath, Session session) {
+    @Transactional
+    public String importServices(String filePath) {
         List<String> errors = new ArrayList<>();
         int imported = 0;
         int updated = 0;
 
         try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
-            String line = reader.readLine();
+            String line = reader.readLine(); // пропускаем заголовок
 
+            int lineNum = 1;
             while ((line = reader.readLine()) != null) {
+                lineNum++;
                 try {
                     String[] data = line.split(",");
                     if (data.length < 3) {
-                        errors.add("Недостаточно данных в строке: " + line);
+                        errors.add("Строка " + lineNum + ": Недостаточно данных (" + data.length + " из 3)");
                         continue;
                     }
 
-                    String name = data[0];
-                    double price = Double.parseDouble(data[1]);
-                    ServiceCategory category = parseServiceCategory(data[2]);
+                    String name = data[0].trim();
+                    double price = Double.parseDouble(data[1].trim());
+                    ServiceCategory category = parseServiceCategory(data[2].trim());
 
-                    Optional<Service> existingService = serviceDAO.findByName(name, session);
+                    Optional<Service> existingServiceOpt = serviceDAO.findByName(name);
 
-                    if (existingService.isPresent()) {
-                        Service service = existingService.get();
+                    if (existingServiceOpt.isPresent()) {
+                        Service service = existingServiceOpt.get();
                         service.setPrice(price);
-
-                        serviceDAO.update(service, session);
+                        // Категория обычно не меняется, но можно и её обновлять, если нужно
+                        // service.setCategory(category);
+                        serviceDAO.update(service);
                         updated++;
                     } else {
                         Service service = new Service();
@@ -103,12 +81,12 @@ public class ServiceCsvImporter {
                         service.setPrice(price);
                         service.setCategory(category);
 
-                        serviceDAO.save(service, session);
+                        serviceDAO.save(service);
                         imported++;
                     }
 
                 } catch (Exception e) {
-                    errors.add("Ошибка в строке: " + line + " - " + e.getMessage());
+                    errors.add("Строка " + lineNum + ": " + e.getMessage() + " - " + line);
                 }
             }
 

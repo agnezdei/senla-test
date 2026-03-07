@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.agnezdei.hotelmvc.model.Booking;
 import com.agnezdei.hotelmvc.model.Guest;
@@ -23,6 +24,7 @@ import com.agnezdei.hotelmvc.repository.RoomDAO;
 import com.agnezdei.hotelmvc.repository.ServiceDAO;
 
 @Component
+@Transactional(readOnly = true)
 public class HotelReporter {
     @Autowired
     private RoomDAO roomDAO;
