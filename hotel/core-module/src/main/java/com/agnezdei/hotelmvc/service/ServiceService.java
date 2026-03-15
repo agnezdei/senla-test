@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.io.IOException;
 import java.util.List;
@@ -49,6 +50,7 @@ public class ServiceService {
         }
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public String importFromCsv(String filePath) {
         logger.info("Начало импорта услуг из файла: {}", filePath);
         try {
@@ -61,6 +63,7 @@ public class ServiceService {
         }
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @Transactional(rollbackFor = BusinessLogicException.class)
     public String addService(String name, double price, ServiceCategory category) throws BusinessLogicException {
         logger.info("Начало добавления услуги: название={}, цена={}, категория={}", name, price, category);
@@ -78,6 +81,7 @@ public class ServiceService {
         return result;
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @Transactional(rollbackFor = {EntityNotFoundException.class, BusinessLogicException.class})
     public String changePrice(String serviceName, double newPrice) throws EntityNotFoundException, BusinessLogicException {
         logger.info("Начало изменения цены услуги: услуга={}, новая цена={}", serviceName, newPrice);

@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.io.IOException;
 import java.util.List;
@@ -58,6 +59,7 @@ public class RoomService {
         }
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public String importFromCsv(String filePath) {
         logger.info("Начало импорта номеров из файла: {}", filePath);
         try {
@@ -70,6 +72,7 @@ public class RoomService {
         }
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @Transactional(rollbackFor = {EntityNotFoundException.class, BusinessLogicException.class})
     public String setUnderMaintenance(String roomNumber) throws EntityNotFoundException, BusinessLogicException {
         logger.info("Начало перевода номера на ремонт: номер={}", roomNumber);
@@ -95,6 +98,7 @@ public class RoomService {
         return result;
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @Transactional(rollbackFor = {EntityNotFoundException.class, BusinessLogicException.class})
     public String setAvailable(String roomNumber) throws EntityNotFoundException, BusinessLogicException {
         logger.info("Начало перевода номера в доступные: номер={}", roomNumber);
@@ -120,6 +124,7 @@ public class RoomService {
         return result;
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @Transactional(rollbackFor = {EntityNotFoundException.class, BusinessLogicException.class})
     public String changePrice(String roomNumber, double newPrice) throws EntityNotFoundException, BusinessLogicException {
         logger.info("Начало изменения цены номера: номер={}, новая цена={}", roomNumber, newPrice);
@@ -138,6 +143,7 @@ public class RoomService {
         return result;
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @Transactional(rollbackFor = {BusinessLogicException.class})
     public String addRoom(String number, RoomType type, double price, int capacity, int stars) throws BusinessLogicException {
         logger.info("Начало добавления номера: номер={}, тип={}, цена={}, вместимость={}, звезды={}",
@@ -218,6 +224,7 @@ public class RoomService {
         return roomDAO.findByNumber(number);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @Transactional
     public void update(Room room) {
         roomDAO.update(room);
