@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -63,6 +64,7 @@ public class GuestServiceService {
         }
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public String importFromCsv(String filePath) {
         logger.info("Начало импорта услуг гостей из файла: {}", filePath);
         try {
@@ -75,6 +77,7 @@ public class GuestServiceService {
         }
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @Transactional(rollbackFor = {EntityNotFoundException.class, BusinessLogicException.class})
     public String addServiceToGuest(String guestPassport, String serviceName, LocalDate serviceDate)
             throws EntityNotFoundException, BusinessLogicException {
@@ -102,6 +105,7 @@ public class GuestServiceService {
         return result;
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @Transactional(rollbackFor = {EntityNotFoundException.class, BusinessLogicException.class})
     public String removeServiceFromGuest(Long guestServiceId)
             throws EntityNotFoundException, BusinessLogicException {

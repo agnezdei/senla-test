@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.io.IOException;
 import java.util.List;
@@ -52,6 +53,7 @@ public class GuestService {
         }
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public String importFromCsv(String filePath) {
         logger.info("Начало импорта гостей из файла: {}", filePath);
         try {
@@ -96,11 +98,13 @@ public class GuestService {
         return guestDAO.findByPassportNumber(passportNumber);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @Transactional
     public Guest save(Guest guest) {
         return guestDAO.save(guest);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @Transactional
     public void update(Guest guest) {
         guestDAO.update(guest);
