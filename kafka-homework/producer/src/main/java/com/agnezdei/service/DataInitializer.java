@@ -18,10 +18,13 @@ public class DataInitializer {
 
     private static final Logger log = LoggerFactory.getLogger(DataInitializer.class);
 
-    @Autowired
     private AccountRepository accountRepository;
 
     private final Map<Long, Account> accountsMap = new ConcurrentHashMap<>();
+
+    public DataInitializer(AccountRepository accountRepository) {
+        this.accountRepository = accountRepository;
+    }
 
     @PostConstruct
     public void init() {

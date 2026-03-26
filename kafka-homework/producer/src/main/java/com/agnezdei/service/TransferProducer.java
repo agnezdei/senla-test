@@ -22,16 +22,18 @@ public class TransferProducer {
     private static final Logger log = LoggerFactory.getLogger(TransferProducer.class);
     private static final String TOPIC = "transfers";
 
-    @Autowired
-    private KafkaTemplate<String, String> kafkaTemplate;
-
-    @Autowired
-    private DataInitializer dataInitializer;
-
-    @Autowired
-    private ObjectMapper objectMapper;
-
+    private final KafkaTemplate<String, String> kafkaTemplate;
+    private final DataInitializer dataInitializer;
+    private final ObjectMapper objectMapper;
     private final AtomicLong transferIdGenerator = new AtomicLong(1);
+
+    public TransferProducer(KafkaTemplate<String, String> kafkaTemplate,
+                            DataInitializer dataInitializer,
+                            ObjectMapper objectMapper) {
+        this.kafkaTemplate = kafkaTemplate;
+        this.dataInitializer = dataInitializer;
+        this.objectMapper = objectMapper;
+    }
 
     @Scheduled(fixedDelay = 200) // 5 сообщений в секунду
     public void generateAndSend() {
@@ -55,7 +57,13 @@ public class TransferProducer {
             TransferEvent event = new TransferEvent(transferId, fromId, toId, amount);
 
             String json = objectMapper.writeValueAsString(event);
-            kafkaTemplate.send(TOPIC, json);
+
+            // Отправка в транзакции
+            kafkaTemplate.executeInTransaction(operations -> {
+                operations.send(TOPIC, String.valueOf(transferId), json);
+                return null;
+            });
+
             log.info("Sent transfer: {}", event);
         } catch (Exception e) {
             log.error("Error generating transfer", e);
