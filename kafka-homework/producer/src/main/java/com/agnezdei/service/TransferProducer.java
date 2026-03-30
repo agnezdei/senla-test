@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -35,7 +36,8 @@ public class TransferProducer {
         this.objectMapper = objectMapper;
     }
 
-    @Scheduled(fixedDelay = 200) // 5 сообщений в секунду
+    @Scheduled(fixedDelay = 200)
+    @Transactional
     public void generateAndSend() {
         try {
             Map<Long, Account> accountsMap = dataInitializer.getAccountsMap();
@@ -58,11 +60,7 @@ public class TransferProducer {
 
             String json = objectMapper.writeValueAsString(event);
 
-            // Отправка в транзакции
-            kafkaTemplate.executeInTransaction(operations -> {
-                operations.send(TOPIC, String.valueOf(transferId), json);
-                return null;
-            });
+            kafkaTemplate.send(TOPIC, String.valueOf(transferId), json);
 
             log.info("Sent transfer: {}", event);
         } catch (Exception e) {
