@@ -5,7 +5,6 @@ import com.agnezdei.model.TransferEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -37,7 +36,7 @@ public class TransferProducer {
     }
 
     @Scheduled(fixedDelay = 200)
-    @Transactional
+    @Transactional("transactionManager")
     public void generateAndSend() {
         try {
             Map<Long, Account> accountsMap = dataInitializer.getAccountsMap();
@@ -57,7 +56,6 @@ public class TransferProducer {
             long transferId = transferIdGenerator.getAndIncrement();
 
             TransferEvent event = new TransferEvent(transferId, fromId, toId, amount);
-
             String json = objectMapper.writeValueAsString(event);
 
             kafkaTemplate.send(TOPIC, String.valueOf(transferId), json);

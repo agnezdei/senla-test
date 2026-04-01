@@ -1,14 +1,12 @@
 package com.agnezdei;
 
 import org.apache.kafka.clients.admin.NewTopic;
+import org.apache.kafka.common.config.TopicConfig;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
 import org.springframework.kafka.config.TopicBuilder;
-import org.springframework.kafka.transaction.KafkaTransactionManager;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.transaction.TransactionManager;
 
 @SpringBootApplication
 @EnableScheduling
@@ -23,12 +21,7 @@ public class ProducerApplication {
         return TopicBuilder.name("transfers")
                 .partitions(3)
                 .replicas(3)
+                .config(TopicConfig.RETENTION_MS_CONFIG, "300000") // 5 минут
                 .build();
-    }
-
-    @Primary
-    @Bean
-    public TransactionManager transactionManager(KafkaTransactionManager<?, ?> kafkaTm) {
-        return kafkaTm;
     }
 }

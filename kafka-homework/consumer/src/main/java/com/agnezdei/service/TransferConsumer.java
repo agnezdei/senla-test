@@ -5,11 +5,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.stereotype.Service;
 import org.springframework.kafka.support.Acknowledgment;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 public class TransferConsumer {
+
     private static final Logger log = LoggerFactory.getLogger(TransferConsumer.class);
     private final TransferService transferService;
     private final ObjectMapper objectMapper;
@@ -19,28 +22,31 @@ public class TransferConsumer {
         this.objectMapper = objectMapper;
     }
 
-    @KafkaListener(topics = "transfers", groupId = "transfer-group")
-    public void handleTransfer(String message, Acknowledgment ack) {
-        log.info("Received message: {}", message);
-        TransferEvent event;
-        try {
-            event = objectMapper.readValue(message, TransferEvent.class);
-        } catch (Exception e) {
-            log.error("Failed to parse message: {}", message, e);
-            return;
+    @KafkaListener(
+            topics = "transfers",
+            groupId = "transfer-group",
+            containerFactory = "batchKafkaListenerContainerFactory",
+            batch = "true"
+    )
+    public void handleTransfers(List<String> messages, Acknowledgment ack) {
+        log.info("Received batch of {} messages", messages.size());
+
+        for (String message : messages) {
+            try {
+                TransferEvent event = objectMapper.readValue(message, TransferEvent.class);
+                boolean success = transferService.processTransfer(event);
+                if (!success) {
+                    transferService.saveFailedTransfer(event);
+                    log.info("Transfer saved as FAILED: {}", event);
+                } else {
+                    log.info("Transfer processed successfully: {}", event);
+                }
+            } catch (Exception e) {
+                log.error("Failed to process message: {}", message, e);
+            }
         }
 
-        try {
-            boolean success = transferService.processTransfer(event);
-            if (!success) {
-                transferService.saveFailedTransfer(event);
-                log.info("Transfer saved as FAILED: {}", event);
-            } else {
-                log.info("Transfer processed successfully: {}", event);
-            }
-            ack.acknowledge();
-        } catch (Exception e) {
-            log.error("Transaction failed, saving transfer with FAILED status", e);
-        }
+        ack.acknowledge();
+        log.info("Batch acknowledged");
     }
 }
