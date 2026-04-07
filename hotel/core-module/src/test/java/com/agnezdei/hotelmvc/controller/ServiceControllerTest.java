@@ -35,17 +35,17 @@ class ServiceControllerTest {
 
     @BeforeEach
     void setUp() {
-        testService = new Service("WiFi", 10.0, ServiceCategory.FOOD);
+        testService = new Service("WiFi", 10.0, ServiceCategory.COMFORT);
         testService.setId(1L);
     }
 
     @Test
     void addService_success() throws BusinessLogicException {
         String expectedResult = "Успех: Услуга добавлена";
-        when(serviceService.addService("WiFi", 10.0, ServiceCategory.FOOD))
+        when(serviceService.addService("WiFi", 10.0, ServiceCategory.COMFORT))
                 .thenReturn(expectedResult);
 
-        ResponseEntity<String> response = serviceController.addService("WiFi", 10.0, ServiceCategory.FOOD);
+        ResponseEntity<String> response = serviceController.addService("WiFi", 10.0, ServiceCategory.COMFORT);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(response.getBody()).isEqualTo(expectedResult);
@@ -57,7 +57,7 @@ class ServiceControllerTest {
                 .thenThrow(new BusinessLogicException("Услуга уже существует"));
 
         try {
-            serviceController.addService("WiFi", 10.0, ServiceCategory.FOOD);
+            serviceController.addService("WiFi", 10.0, ServiceCategory.COMFORT);
         } catch (BusinessLogicException e) {
             assertThat(e.getMessage()).contains("Услуга уже существует");
         }
