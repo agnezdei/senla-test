@@ -1,0 +1,16 @@
+$kind: http-request
+name: register
+url: http://localhost:8080/api/users/register
+method: POST
+body:
+  type: json
+  content: |-
+    {
+        "username": "chris",
+        "password": "111222"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{token}}"
+order: 1778663222484

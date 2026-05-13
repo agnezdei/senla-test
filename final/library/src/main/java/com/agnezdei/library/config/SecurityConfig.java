@@ -24,7 +24,6 @@ import jakarta.servlet.http.HttpServletResponse;
 @Configuration
 @PropertySource("classpath:jwt.properties")
 @EnableWebSecurity
-@EnableMethodSecurity
 public class SecurityConfig {
 
     private final UserDetailsService userDetailsService;
