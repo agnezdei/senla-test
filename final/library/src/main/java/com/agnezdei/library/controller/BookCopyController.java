@@ -1,8 +1,10 @@
 package com.agnezdei.library.controller;
 
 import com.agnezdei.library.dto.BookCopyDTO;
+import com.agnezdei.library.dto.BorrowRecordDTO;
 import com.agnezdei.library.model.BookCopy;
 import com.agnezdei.library.service.BookCopyService;
+import com.agnezdei.library.service.BorrowRecordService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,9 +21,12 @@ public class BookCopyController {
 
     private static final Logger log = LoggerFactory.getLogger(BookCopyController.class);
     private final BookCopyService copyService;
+    private final BorrowRecordService borrowRecordService;
 
-    public BookCopyController(BookCopyService copyService) {
+    public BookCopyController(BookCopyService copyService,
+                              BorrowRecordService borrowRecordService) {
         this.copyService = copyService;
+        this.borrowRecordService = borrowRecordService;
     }
 
     @GetMapping("/{id}")
@@ -40,6 +45,12 @@ public class BookCopyController {
     public ResponseEntity<List<BookCopyDTO>> getCopiesByCatalog(@PathVariable("catalogId") Long catalogId) {
         log.info("GET /api/copies/by-catalog/{}", catalogId);
         return ResponseEntity.ok(copyService.getCopiesByCatalog(catalogId));
+    }
+
+    @GetMapping("/{id}/history")
+    public ResponseEntity<List<BorrowRecordDTO>> getCopyHistory(@PathVariable("id") Long id) {
+        log.info("GET /api/copies/{}/history", id);
+        return ResponseEntity.ok(borrowRecordService.getHistoryByCopy(id));
     }
 
     @PostMapping
