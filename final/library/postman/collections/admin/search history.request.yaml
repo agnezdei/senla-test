@@ -1,0 +1,8 @@
+$kind: http-request
+name: search history
+url: http://localhost:8080/api/borrows/admin/user/2/history
+method: GET
+auth:
+  credentials: []
+  type: bearer
+order: 3351733676045507

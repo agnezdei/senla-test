@@ -1,0 +1,14 @@
+$kind: http-request
+name: change copy
+url: http://localhost:8080/api/copies/11
+method: PUT
+body:
+  type: json
+  content: '{"inventoryNumber": "INV-177", "status": "AVAILABLE", "editionId": 5,
+    "catalogId": 1}'
+auth:
+  credentials:
+    - key: token
+      value: "{{token}}"
+  type: bearer
+order: 3004080909072436

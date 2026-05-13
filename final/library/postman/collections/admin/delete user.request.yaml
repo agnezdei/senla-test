@@ -1,0 +1,10 @@
+$kind: http-request
+name: delete user
+url: http://localhost:8080/api/users/4
+method: DELETE
+auth:
+  credentials:
+    - key: token
+      value: "{{token}}"
+  type: bearer
+order: 3165191837584911

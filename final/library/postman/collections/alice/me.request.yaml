@@ -1,0 +1,8 @@
+$kind: http-request
+name: me
+url: http://localhost:8080/api/users/me
+method: GET
+body:
+  type: json
+  content: ""
+order: 3673047872448307

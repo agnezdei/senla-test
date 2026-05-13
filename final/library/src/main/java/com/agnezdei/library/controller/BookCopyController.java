@@ -25,19 +25,19 @@ public class BookCopyController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<BookCopyDTO> getCopy(@PathVariable Long id) {
+    public ResponseEntity<BookCopyDTO> getCopy(@PathVariable("id") Long id) {
         log.info("GET /api/copies/{}", id);
         return ResponseEntity.ok(copyService.getCopyById(id));
     }
 
     @GetMapping("/status/{status}")
-    public ResponseEntity<List<BookCopyDTO>> getCopiesByStatus(@PathVariable BookCopy.Status status) {
+    public ResponseEntity<List<BookCopyDTO>> getCopiesByStatus(@PathVariable("status") BookCopy.Status status) {
         log.info("GET /api/copies/status/{}", status);
         return ResponseEntity.ok(copyService.getCopiesByStatus(status));
     }
 
     @GetMapping("/by-catalog/{catalogId}")
-    public ResponseEntity<List<BookCopyDTO>> getCopiesByCatalog(@PathVariable Long catalogId) {
+    public ResponseEntity<List<BookCopyDTO>> getCopiesByCatalog(@PathVariable("catalogId") Long catalogId) {
         log.info("GET /api/copies/by-catalog/{}", catalogId);
         return ResponseEntity.ok(copyService.getCopiesByCatalog(catalogId));
     }
@@ -51,7 +51,7 @@ public class BookCopyController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<BookCopyDTO> updateCopy(@PathVariable Long id,
+    public ResponseEntity<BookCopyDTO> updateCopy(@PathVariable("id") Long id,
                                                   @Valid @RequestBody BookCopyDTO dto) {
         log.info("PUT /api/copies/{}", id);
         return ResponseEntity.ok(copyService.updateCopy(id, dto));
@@ -59,7 +59,7 @@ public class BookCopyController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deleteCopy(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteCopy(@PathVariable("id") Long id) {
         log.info("DELETE /api/copies/{}", id);
         copyService.deleteCopy(id);
         return ResponseEntity.noContent().build();

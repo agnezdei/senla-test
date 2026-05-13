@@ -59,7 +59,7 @@ public class UserController {
 
     @DeleteMapping("/{userId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long userId) {
+    public ResponseEntity<Void> deleteUser(@PathVariable("userId") Long userId) {
         log.info("DELETE /api/users/{} - администратор удаляет пользователя", userId);
         userService.deleteUser(userId);
         return ResponseEntity.noContent().build();

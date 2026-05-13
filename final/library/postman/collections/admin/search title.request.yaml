@@ -1,0 +1,9 @@
+$kind: http-request
+name: search title
+url: http://localhost:8080/api/editions/search/title?title=война
+method: GET
+queryParams:
+  title: война
+auth:
+  type: bearer
+order: 2489764491545345

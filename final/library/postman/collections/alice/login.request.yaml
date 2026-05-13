@@ -1,0 +1,28 @@
+$kind: http-request
+name: login
+url: http://localhost:8080/login
+method: POST
+body:
+  type: json
+  content: |-
+    {
+        "username": "alice",
+        "password": "123456"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      // Получить тело ответа в виде объекта
+      const response = pm.response.json();
+
+      // Проверить, есть ли токен
+      if (response.token) {
+          // Сохранить токен в переменную коллекции с именем "token"
+          pm.collectionVariables.set("token", response.token);
+          console.log("Токен сохранён:", response.token);
+      } else {
+          console.log("Токен не найден в ответе");
+      }
+    language: text/javascript
+examples: .resources/login.resources/examples
+order: 1778622336823

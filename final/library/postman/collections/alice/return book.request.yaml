@@ -1,0 +1,5 @@
+$kind: http-request
+name: return book
+url: http://localhost:8080/api/borrows/return-by-copy/7
+method: POST
+order: 4488662916314866

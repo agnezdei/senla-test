@@ -1,0 +1,8 @@
+$kind: http-request
+name: force return
+url: http://localhost:8080/api/borrows/admin/force-return/1
+method: POST
+auth:
+  credentials: []
+  type: bearer
+order: 3896810349116775

@@ -1,0 +1,5 @@
+$kind: http-request
+name: available
+url: http://localhost:8080/api/copies/status/AVAILABLE
+method: GET
+order: 4097065387809073

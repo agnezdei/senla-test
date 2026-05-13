@@ -24,13 +24,13 @@ public class BookEditionController {
     }
 
     @GetMapping("/search/title")
-    public ResponseEntity<List<BookEditionDTO>> searchByTitle(@RequestParam String title) {
+    public ResponseEntity<List<BookEditionDTO>> searchByTitle(@RequestParam("title") String title) {
         log.info("GET /api/editions/search/title?title={}", title);
         return ResponseEntity.ok(editionService.searchByTitle(title));
     }
 
     @GetMapping("/search/author")
-    public ResponseEntity<List<BookEditionDTO>> searchByAuthor(@RequestParam String author) {
+    public ResponseEntity<List<BookEditionDTO>> searchByAuthor(@RequestParam("author") String author) {
         log.info("GET /api/editions/search/author?author={}", author);
         return ResponseEntity.ok(editionService.searchByAuthor(author));
     }
@@ -42,7 +42,7 @@ public class BookEditionController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<BookEditionDTO> getEdition(@PathVariable Long id) {
+    public ResponseEntity<BookEditionDTO> getEdition(@PathVariable("id") Long id) {
         log.info("GET /api/editions/{}", id);
         return ResponseEntity.ok(editionService.getEditionById(id));
     }
@@ -56,7 +56,7 @@ public class BookEditionController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<BookEditionDTO> updateEdition(@PathVariable Long id,
+    public ResponseEntity<BookEditionDTO> updateEdition(@PathVariable("id") Long id,
                                                         @Valid @RequestBody BookEditionDTO dto) {
         log.info("PUT /api/editions/{}", id);
         return ResponseEntity.ok(editionService.updateEdition(id, dto));
@@ -64,7 +64,7 @@ public class BookEditionController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deleteEdition(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteEdition(@PathVariable("id") Long id) {
         log.info("DELETE /api/editions/{}", id);
         editionService.deleteEdition(id);
         return ResponseEntity.noContent().build();

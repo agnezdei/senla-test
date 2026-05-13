@@ -1,0 +1,8 @@
+$kind: http-request
+name: rename catalog
+url: http://localhost:8080/api/catalogs/2
+method: PUT
+body:
+  type: json
+  content: '{"name": "Учебная литература"}'
+order: 2458952832545807

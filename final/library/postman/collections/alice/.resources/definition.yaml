@@ -1,0 +1,10 @@
+$kind: collection
+name: alice
+variables:
+  token: ""
+auth:
+  - id: f9280980-f53a-4ac2-9231-e6310d0a1a18
+    type: bearer
+    name: Bearer Token
+    credentials:
+      token: "{{token}}"

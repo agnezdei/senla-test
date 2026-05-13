@@ -1,0 +1,5 @@
+$kind: http-request
+name: catalogs
+url: http://localhost:8080/api/catalogs/2
+method: GET
+order: 2411767667473187

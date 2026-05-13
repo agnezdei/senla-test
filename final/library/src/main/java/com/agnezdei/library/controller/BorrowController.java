@@ -30,8 +30,8 @@ public class BorrowController {
     @PostMapping("/borrow")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<BorrowRecordDTO> borrowBook(Authentication authentication,
-                                                      @RequestParam Long copyId,
-                                                      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dueDate) {
+                                                      @RequestParam("copyId") Long copyId,
+                                                      @RequestParam(value = "dueDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dueDate) {
         Long userId = extractUserId(authentication);
         log.info("POST /api/borrows/borrow - userId={}, copyId={}", userId, copyId);
         BorrowRecordDTO record = borrowService.borrowBook(userId, copyId, dueDate);
@@ -40,22 +40,22 @@ public class BorrowController {
 
     @PostMapping("/return/{recordId}")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<BorrowRecordDTO> returnBook(@PathVariable Long recordId) {
+    public ResponseEntity<BorrowRecordDTO> returnBook(@PathVariable("recordId") Long recordId) {
         log.info("POST /api/borrows/return/{}", recordId);
         return ResponseEntity.ok(borrowService.returnBook(recordId));
     }
 
     @PostMapping("/return-by-copy/{copyId}")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<BorrowRecordDTO> returnBookByCopy(@PathVariable Long copyId) {
+    public ResponseEntity<BorrowRecordDTO> returnBookByCopy(@PathVariable("copyId") Long copyId) {
         log.info("POST /api/borrows/return-by-copy/{}", copyId);
         return ResponseEntity.ok(borrowService.returnBookByCopy(copyId));
     }
 
     @PostMapping("/extend/{recordId}")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<BorrowRecordDTO> extendDueDate(@PathVariable Long recordId,
-                                                         @RequestParam int daysToAdd) {
+    public ResponseEntity<BorrowRecordDTO> extendDueDate(@PathVariable("recordId") Long recordId,
+                                                         @RequestParam("daysToAdd") int daysToAdd) {
         log.info("POST /api/borrows/extend/{}?days={}", recordId, daysToAdd);
         return ResponseEntity.ok(borrowService.extendDueDate(recordId, daysToAdd));
     }
@@ -100,14 +100,14 @@ public class BorrowController {
 
     @GetMapping("/admin/user/{userId}/history")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<BorrowRecordDTO>> getUserHistory(@PathVariable Long userId) {
+    public ResponseEntity<List<BorrowRecordDTO>> getUserHistory(@PathVariable("userId") Long userId) {
         log.info("GET /api/borrows/admin/user/{}/history", userId);
         return ResponseEntity.ok(borrowService.getHistoryByUser(userId));
     }
 
     @PostMapping("/admin/force-return/{recordId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<BorrowRecordDTO> forceReturn(@PathVariable Long recordId) {
+    public ResponseEntity<BorrowRecordDTO> forceReturn(@PathVariable("recordId") Long recordId) {
         log.info("POST /api/borrows/admin/force-return/{}", recordId);
         return ResponseEntity.ok(borrowService.returnBook(recordId));
     }

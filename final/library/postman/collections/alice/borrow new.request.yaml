@@ -1,0 +1,10 @@
+$kind: http-request
+name: borrow new
+url: http://localhost:8080/api/borrows/borrow?copyId=7&dueDate=2026-05-20
+method: POST
+queryParams:
+  - key: copyId
+    value: "7"
+  - key: dueDate
+    value: 2026-05-20
+order: 4469991670038560

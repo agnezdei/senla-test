@@ -1,0 +1,14 @@
+$kind: http-request
+name: new book
+url: http://localhost:8080/api/editions
+method: POST
+body:
+  type: json
+  content: '{"title": "Новая книга", "author": "Иванов", "isbn": "1234567890123",
+    "publisher": "Просвещение", "year": 2023, "description": "..."}'
+auth:
+  credentials:
+    - key: token
+      value: "{{token}}"
+  type: bearer
+order: 2640744975953412

@@ -30,7 +30,7 @@ public class CatalogController {
     }
 
     @GetMapping("/{parentId}/children")
-    public ResponseEntity<List<CatalogDTO>> getChildren(@PathVariable Long parentId) {
+    public ResponseEntity<List<CatalogDTO>> getChildren(@PathVariable("parentId") Long parentId) {
         log.info("GET /api/catalogs/{}/children", parentId);
         return ResponseEntity.ok(catalogService.getChildren(parentId));
     }
@@ -42,7 +42,7 @@ public class CatalogController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<CatalogDTO> getCatalog(@PathVariable Long id) {
+    public ResponseEntity<CatalogDTO> getCatalog(@PathVariable("id") Long id) {
         log.info("GET /api/catalogs/{}", id);
         return ResponseEntity.ok(catalogService.getCatalogTree(id));
     }
@@ -57,7 +57,7 @@ public class CatalogController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<CatalogDTO> updateCatalog(@PathVariable Long id,
+    public ResponseEntity<CatalogDTO> updateCatalog(@PathVariable("id") Long id,
                                                     @Valid @RequestBody CatalogDTO dto) {
         log.info("PUT /api/catalogs/{} - обновление", id);
         return ResponseEntity.ok(catalogService.updateCatalog(id, dto));
@@ -65,7 +65,7 @@ public class CatalogController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deleteCatalog(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteCatalog(@PathVariable("id") Long id) {
         log.info("DELETE /api/catalogs/{}", id);
         catalogService.deleteCatalog(id);
         return ResponseEntity.noContent().build();

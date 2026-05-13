@@ -1,0 +1,16 @@
+$kind: http-request
+name: login
+url: http://localhost:8080/login
+method: POST
+body:
+  type: json
+  content: |-
+    {
+        "username": "admin",
+        "password": "admin"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{token}}"
+order: 1778623189566

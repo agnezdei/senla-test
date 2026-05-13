@@ -7,6 +7,5 @@ RUN mvn clean package -DskipTests
 
 FROM tomcat:10.1-jdk17
 COPY --from=builder /build/target/library.war /usr/local/tomcat/webapps/ROOT.war
-COPY database.docker.properties /usr/local/tomcat/webapps/ROOT/WEB-INF/classes/database.properties
 EXPOSE 8080
 CMD ["catalina.sh", "run"]

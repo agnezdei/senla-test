@@ -1,0 +1,5 @@
+$kind: http-request
+name: borrows
+url: http://localhost:8080/api/borrows/me/active
+method: GET
+order: 4426438139403913

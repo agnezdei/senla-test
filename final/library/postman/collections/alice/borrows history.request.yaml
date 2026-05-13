@@ -1,0 +1,5 @@
+$kind: http-request
+name: borrows history
+url: http://localhost:8080/api/borrows/me/history
+method: GET
+order: 4472614884787214
